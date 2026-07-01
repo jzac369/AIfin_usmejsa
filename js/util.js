@@ -23,10 +23,13 @@ export function formatDateTime(iso) {
   });
 }
 
-export function downloadICS(term) {
+export function downloadICS(term, details) {
+  const durationHours = details?.durationHours || 2;
+  const title = details?.title || "Ako sa nenechať oklamať – AI ako pomocník pri finančných rozhodnutiach";
   const start = new Date(term.datetime);
-  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+  const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);
   const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const escapeICS = (s) => String(s || "").replace(/([,;])/g, "\\$1").replace(/\n/g, "\\n");
   const ics = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -35,11 +38,12 @@ export function downloadICS(term) {
     `DTSTAMP:${fmt(new Date())}`,
     `DTSTART:${fmt(start)}`,
     `DTEND:${fmt(end)}`,
-    "SUMMARY:Workshop: Ako sa nenechať oklamať – AI ako pomocník pri finančných rozhodnutiach",
-    "DESCRIPTION:Tešíme sa na vás na workshope!",
+    `SUMMARY:Workshop: ${escapeICS(title)}`,
+    `DESCRIPTION:${escapeICS(details?.description || "Tešíme sa na vás na workshope!")}`,
+    details?.location ? `LOCATION:${escapeICS(details.location)}` : "",
     "END:VEVENT",
     "END:VCALENDAR"
-  ].join("\r\n");
+  ].filter(Boolean).join("\r\n");
   const blob = new Blob([ics], { type: "text/calendar" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);

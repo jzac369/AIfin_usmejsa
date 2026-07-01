@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ochrana osobných údajov – AI a finančné rozhodnutia</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<script>
+  (function(){ var t = localStorage.getItem("theme") || "light"; document.documentElement.setAttribute("data-theme", t); })();
+</script>
+
+<header class="topbar">
+  <div class="brand">🤖💶 AI & Financie <span class="badge">workshop</span></div>
+  <nav>
+    <a href="index.html">Registrácia</a>
+    <a href="kviz.html">Môj kód / Kvíz</a>
+    <a href="admin.html">Admin</a>
+  </nav>
+  <button class="theme-toggle" id="themeBtn" title="Prepnúť tému">🌙</button>
+</header>
+
+<div class="container" style="max-width:780px;">
+  <div class="card">
+    <h1>Ochrana osobných údajov (GDPR)</h1>
+    <p style="color:var(--muted);">Posledná aktualizácia: júl 2026</p>
+
+    <h2>1. Kto spracúva vaše údaje</h2>
+    <p>Vaše osobné údaje spracúva organizátor workshopu „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“ (ďalej len „organizátor“) ako prevádzkovateľ v zmysle GDPR (Nariadenie EÚ 2016/679) a zákona č. 18/2018 Z. z. o ochrane osobných údajov.</p>
+
+    <h2>2. Aké údaje zbierame a prečo</h2>
+    <p>Pri registrácii na workshop spracúvame:</p>
+    <ul>
+      <li><strong>Meno, priezvisko, mesto, email, telefónne číslo</strong> — na účely organizácie podujatia, komunikácie o termíne a zaslania potvrdenia registrácie.</li>
+      <li><strong>Odpovede z krátkeho dotazníka</strong> (zdroj informácie, vlastnené zariadenia, skúsenosti s AI, digitálne zručnosti, dôvod účasti) — na účely lepšieho prispôsobenia obsahu workshopu a vyhodnotenia záujmu verejnosti.</li>
+      <li><strong>Výsledky vstupného a výstupného kvízu</strong — na účely vyhodnotenia vzdelávacieho prínosu workshopu. Tieto výsledky sa nepoužívajú na žiadne automatizované rozhodovanie s právnymi účinkami.</li>
+      <li><strong>Prípadná spätná väzba</strong> (hodnotenie, komentár) — na účely zlepšovania budúcich workshopov.</li>
+      <li><strong>Záznam o prihlásení a zmenách registrácie</strong> (interný log) — na účely bezpečnosti a preukázateľnosti, kto a kedy vykonal zmenu.</li>
+    </ul>
+    <p>Právnym základom spracúvania je váš <strong>súhlas</strong> udelený pri registrácii.</p>
+
+    <h2>3. Kde sú údaje uložené</h2>
+    <p>Údaje sú uložené v databáze <strong>Google Firebase (Firestore)</strong>. Potvrdzujúce emaily sa odosielajú cez službu <strong>EmailJS</strong>. Oba subjekty môžu spracúvať dáta na serveroch mimo EÚ; obaja poskytovatelia deklarujú súlad s GDPR (napr. cez štandardné zmluvné doložky EÚ).</p>
+
+    <h2>4. Kto má prístup k údajom</h2>
+    <p>K vašim údajom má prístup iba organizátor workshopu (admin zóna chránená heslom). Údaje sa nepredávajú tretím stranám na marketingové účely.</p>
+
+    <h2>5. Ako dlho údaje uchovávame</h2>
+    <p>Osobné údaje uchovávame po dobu nevyhnutnú na organizáciu workshopu a vyhodnotenie jeho prínosu, najviac však <strong>12 mesiacov</strong> od konania workshopu, pokiaľ si neskôr nepožiadate o ich skoršie vymazanie.</p>
+
+    <h2>6. Vaše práva</h2>
+    <p>V súvislosti so spracúvaním osobných údajov máte právo:</p>
+    <ul>
+      <li>na požadovať prístup k svojim údajom a ich kópiu;</li>
+      <li>na opravu nesprávnych údajov;</li>
+      <li>na vymazanie údajov ("právo byť zabudnutý");</li>
+      <li>na obmedzenie spracúvania alebo namietanie proti nemu;</li>
+      <li>kedykoľvek odvolať svoj súhlas, bez toho, aby to malo vplyv na zákonnosť spracúvania pred jeho odvolaním;</li>
+      <li>podať sťažnosť na <a href="https://dataprotection.gov.sk" target="_blank" rel="noopener noreferrer">Úrad na ochranu osobných údajov SR</a>.</li>
+    </ul>
+    <p>Svoju registráciu môžete kedykoľvek (najneskôr do 48 hodín pred workshopom) sami zrušiť po prihlásení svojím kódom v sekcii „<a href="kviz.html">Môj kód / Kvíz</a>“. Pre akúkoľvek inú požiadavku súvisiacu s vašimi údajmi kontaktujte prosím priamo organizátora workshopu.</p>
+
+    <h2>7. Kontakt</h2>
+    <p>V prípade otázok k spracúvaniu osobných údajov kontaktujte organizátora workshopu na kontaktnej adrese uvedenej pri registrácii alebo priamo na mieste konania podujatia.</p>
+  </div>
+</div>
+
+<footer class="site-footer">
+  Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“
+</footer>
+
+<script type="module">
+  import { applyStoredTheme, toggleTheme } from "./js/util.js";
+  applyStoredTheme();
+  document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+</script>
+</body>
+</html>

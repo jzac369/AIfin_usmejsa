@@ -252,7 +252,7 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
 .term-option .capacity-bar.full > div { background: var(--danger); }
 
 label { display: block; font-weight: 500; font-size: .9rem; margin: 14px 0 6px; }
-input[type=text], input[type=email], input[type=tel], select, textarea {
+input[type=text], input[type=email], input[type=tel], input[type=password], input[type=number], select, textarea {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
@@ -262,6 +262,21 @@ input[type=text], input[type=email], input[type=tel], select, textarea {
   font-size: .95rem;
 }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); }
+
+.rte-toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.rte-toolbar button { padding: 6px 12px; font-size: .85rem; }
+.rte-editable {
+  width: 100%;
+  min-height: 180px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: .95rem;
+  overflow-y: auto;
+}
+.rte-editable:focus { outline: 2px solid var(--primary); }
 
 .checkbox-row, .radio-row {
   display: flex;

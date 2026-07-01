@@ -29,6 +29,16 @@ initEmailjs();
 
 let terms = [];
 let selectedTermId = null;
+let workshopDetails = null;
+
+async function loadWorkshopDetails() {
+  const snap = await getDoc(doc(db, "settings", "workshopDetails"));
+  workshopDetails = snap.exists() ? snap.data() : null;
+  if (workshopDetails?.location) {
+    const el = document.getElementById("heroLocation");
+    if (el) el.textContent = `📍 ${workshopDetails.location}`;
+  }
+}
 
 const DEFAULT_HERO = {
   title: "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach",
@@ -256,11 +266,12 @@ function showSuccess(code, status) {
   });
 
   document.getElementById("icsBtn").addEventListener("click", () => {
-    if (term) downloadICS(term);
+    if (term) downloadICS(term, workshopDetails);
   });
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 loadHero();
+loadWorkshopDetails();
 loadTerms();

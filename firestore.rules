@@ -54,6 +54,13 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Materiály na stiahnutie (súbory uložené ako base64 kvôli bezplatnému
+    // plánu bez Firebase Storage) - verejne čitateľné, spravuje ich len admin.
+    match /materials/{materialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Interný log zmien - čítať ho môže len admin. Zapisovať môže admin
     // čokoľvek; účastník (bez prihlásenia) smie zapísať LEN záznam o svojom
     // prihlásení kódom alebo o zablokovanom pokuse o zmenu/zrušenie tesne

@@ -55,6 +55,7 @@
     <div class="admin-nav-group">
       <div class="admin-nav-label">Nastavenia</div>
       <button class="admin-nav-item" data-tab="terms"><span>📅</span> Termíny</button>
+      <button class="admin-nav-item" data-tab="workshopDetails"><span>📋</span> Detaily workshopu</button>
       <button class="admin-nav-item" data-tab="questions"><span>❓</span> Otázky</button>
       <button class="admin-nav-item" data-tab="email"><span>✉️</span> Email</button>
       <button class="admin-nav-item" data-tab="landing"><span>🌐</span> Landing page</button>
@@ -77,6 +78,7 @@
         <div class="search-row">
           <input type="text" id="searchInput" placeholder="Hľadať podľa mena, mesta, emailu alebo kódu…" />
           <select id="termFilter"><option value="">Všetky termíny</option></select>
+          <button id="addRegistrantBtn" class="secondary">➕ Pridať účastníka</button>
           <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
         </div>
         <p style="color:var(--muted); font-size:.82rem;">
@@ -84,6 +86,24 @@
           <span class="badge-pill" style="background:#fff3d6;color:#93650a;">žltá</span> = len vstupný kvíz ·
           <span class="badge-pill" style="background:#e0e6f5;color:#3d4a6b;">modrá</span> = náhradník (waitlist)
         </p>
+
+        <div class="card" id="addRegistrantForm" style="display:none; background:var(--bg); margin-bottom:16px;">
+          <h3 style="margin-top:0;">Pridať účastníka ručne</h3>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:0 16px;">
+            <div><label>Meno</label><input type="text" id="newRegFirstName" /></div>
+            <div><label>Priezvisko</label><input type="text" id="newRegLastName" /></div>
+            <div><label>Mesto</label><input type="text" id="newRegCity" /></div>
+            <div><label>Email</label><input type="email" id="newRegEmail" /></div>
+            <div><label>Telefón</label><input type="text" id="newRegPhone" /></div>
+            <div><label>Termín</label><select id="newRegTerm"></select></div>
+          </div>
+          <div id="addRegistrantError" class="alert error" style="display:none;"></div>
+          <div class="actions">
+            <button type="button" id="submitNewRegistrantBtn">Pridať</button>
+            <button type="button" class="secondary" id="cancelNewRegistrantBtn">Zrušiť</button>
+          </div>
+        </div>
+
         <div class="table-wrap" id="regGroupsContainer"></div>
       </div>
     </div>
@@ -148,10 +168,35 @@
         <h2>Nastavenie termínov workshopu</h2>
         <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb, počet náhradníkov (čakacia listina) si vieš zvoliť pre každý termín samostatne.</p>
         <div id="termsEditor"></div>
+
+        <label class="checkbox-row" style="font-weight:400; margin-top:18px;">
+          <input type="checkbox" id="restrictQuizDayCheck" />
+          Kvíz (vstupný aj výstupný) bude možné vypĺňať len v deň konania workshopu
+        </label>
+
         <div class="actions">
           <button id="saveTermsBtn">💾 Uložiť termíny</button>
         </div>
         <div id="termsSaveMsg" class="alert success" style="display:none;">Termíny boli uložené.</div>
+      </div>
+    </div>
+
+    <div id="tab-workshopDetails" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Detaily workshopu</h2>
+        <p style="color:var(--muted)">Tieto údaje sa používajú v pozvánke do kalendára, na certifikáte a v ďalších miestach naprieč appkou.</p>
+        <label for="workshopTitleInput">Názov workshopu</label>
+        <input type="text" id="workshopTitleInput" />
+        <label for="workshopLocationInput">Lokalita konania</label>
+        <input type="text" id="workshopLocationInput" placeholder="napr. Mestská knižnica, Hlavná 1, Nitra" />
+        <label for="workshopDurationInput">Trvanie (v hodinách)</label>
+        <input type="number" id="workshopDurationInput" min="0.5" step="0.5" style="max-width:140px;" />
+        <label for="workshopDescriptionInput">Popis workshopu</label>
+        <textarea id="workshopDescriptionInput" rows="4"></textarea>
+        <div class="actions">
+          <button id="saveWorkshopDetailsBtn">💾 Uložiť detaily</button>
+        </div>
+        <div id="workshopDetailsSaveMsg" class="alert success" style="display:none;">Detaily boli uložené.</div>
       </div>
     </div>
 
@@ -177,8 +222,15 @@
         <p style="color:var(--muted)">Odosielanie beží cez bezplatnú službu EmailJS (nastavenie v <code>js/emailjs-config.js</code>, návod v README). Dostupné premenné: <code>{{meno}}</code>, <code>{{priezvisko}}</code>, <code>{{termin}}</code>, <code>{{kod}}</code>.</p>
         <label for="emailSubjectInput">Predmet emailu</label>
         <input type="text" id="emailSubjectInput" />
-        <label for="emailBodyInput">Text emailu</label>
-        <textarea id="emailBodyInput" rows="10"></textarea>
+        <label>Text emailu</label>
+        <div class="rte-toolbar">
+          <button type="button" class="secondary" data-cmd="bold" title="Tučné"><strong>B</strong></button>
+          <button type="button" class="secondary" data-cmd="italic" title="Kurzíva"><em>I</em></button>
+          <button type="button" class="secondary" data-cmd="underline" title="Podčiarknuté"><u>U</u></button>
+          <button type="button" class="secondary" data-cmd="insertUnorderedList" title="Odrážky">• Zoznam</button>
+          <button type="button" class="secondary" data-cmd="removeFormat" title="Zrušiť formátovanie">Vyčistiť</button>
+        </div>
+        <div id="emailBodyInput" class="rte-editable" contenteditable="true"></div>
         <div class="actions">
           <button id="saveEmailBtn">💾 Uložiť text emailu</button>
         </div>
@@ -206,13 +258,16 @@
     <div id="tab-materials" class="tab-panel" style="display:none;">
       <div class="card">
         <h2>Materiály na stiahnutie</h2>
-        <p style="color:var(--muted)">Tento zoznam odkazov uvidia všetci účastníci po prihlásení sa svojím kódom. Vlož napr. odkaz na Google Drive alebo Dropbox s prezentáciou.</p>
-        <div id="materialsEditor"></div>
-        <div class="actions">
-          <button type="button" id="addMaterialBtn" class="secondary">➕ Pridať odkaz</button>
-          <button type="button" id="saveMaterialsBtn">💾 Uložiť materiály</button>
+        <p style="color:var(--muted)">Nahraté súbory uvidia všetci účastníci po prihlásení sa svojím kódom. Kvôli bezplatnému plánu (bez Firebase Storage) je limit veľkosti súboru cca <strong>700 KB</strong> — vhodné pre kratšie PDF s malým počtom obrázkov.</p>
+
+        <div style="display:grid; grid-template-columns:2fr 2fr auto; gap:0 16px; align-items:end;">
+          <div><label>Názov materiálu</label><input type="text" id="newMaterialTitle" placeholder="napr. Brožúra – AI a financie" /></div>
+          <div><label>Súbor</label><input type="file" id="newMaterialFile" /></div>
+          <button type="button" id="uploadMaterialBtn" style="height:42px;">⬆️ Nahrať</button>
         </div>
-        <div id="materialsSaveMsg" class="alert success" style="display:none;">Materiály boli uložené.</div>
+        <div id="materialsUploadError" class="alert error" style="display:none;"></div>
+
+        <div id="materialsList" class="table-wrap" style="margin-top:18px;"></div>
       </div>
     </div>
 

@@ -30,6 +30,15 @@ async function loadQuestions() {
 let registration = null;
 let code = null;
 let currentTerm = null;
+let workshopDetails = null;
+let quizRestrictedToWorkshopDay = false;
+
+function isSameCalendarDay(iso) {
+  if (!iso) return false;
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+}
 let activeSet = null; // "entry" | "exit"
 let currentIndex = 0;
 let answers = [];
@@ -70,14 +79,20 @@ async function login() {
     currentTerm = termSnap.exists() ? { id: termSnap.id, ...termSnap.data() } : null;
   }
 
+  const restrictionSnap = await getDoc(doc(db, "settings", "quizRestriction"));
+  quizRestrictedToWorkshopDay = restrictionSnap.exists() ? !!restrictionSnap.data().restrictToWorkshopDay : false;
+
+  const detailsSnap = await getDoc(doc(db, "settings", "workshopDetails"));
+  workshopDetails = detailsSnap.exists() ? detailsSnap.data() : null;
+
   logParticipantEvent("login", {});
   loadMaterials();
   showWelcome();
 }
 
 async function loadMaterials() {
-  const snap = await getDoc(doc(db, "settings", "materials"));
-  const items = snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : [];
+  const snap = await getDocs(collection(db, "materials"));
+  const items = snap.docs.map((d) => d.data()).sort((a, b) => (a.uploadedAt || 0) - (b.uploadedAt || 0));
   const section = document.getElementById("materialsSection");
   const list = document.getElementById("materialsList");
   if (items.length === 0) {
@@ -87,9 +102,8 @@ async function loadMaterials() {
   list.innerHTML = "";
   items.forEach((m) => {
     const link = document.createElement("a");
-    link.href = m.url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
+    link.href = m.dataUrl;
+    link.download = m.filename || m.title;
     link.className = "btn secondary";
     link.style.marginRight = "8px";
     link.style.marginBottom = "8px";
@@ -151,7 +165,12 @@ function showWelcome() {
   const actions = document.getElementById("welcomeActions");
   actions.innerHTML = "";
 
-  if (registration.status !== "cancelled") {
+  const quizPending = !registration.entryQuizDone || !registration.exitQuizDone;
+  const restrictedToday = quizRestrictedToWorkshopDay && currentTerm && !isSameCalendarDay(currentTerm.datetime);
+
+  if (registration.status !== "cancelled" && quizPending && restrictedToday) {
+    actions.innerHTML = `<p style="color:var(--muted); margin:0;">📅 Kvíz bude dostupný až v deň workshopu (${formatDateTime(currentTerm.datetime)}).</p>`;
+  } else if (registration.status !== "cancelled") {
     if (!registration.entryQuizDone) {
       const b = button("Spustiť vstupný kvíz", () => startQuiz("entry"));
       actions.appendChild(b);
@@ -349,8 +368,9 @@ function startQuiz(set) {
   answers = [];
   welcomeCard.style.display = "none";
   quizCard.style.display = "block";
+  const count = quizSets[set].length;
   document.getElementById("quizTitle").textContent =
-    set === "entry" ? "📝 Vstupný kvíz (8 otázok)" : "📝 Výstupný kvíz (8 otázok)";
+    set === "entry" ? `📝 Vstupný kvíz (${count} otázok)` : `📝 Výstupný kvíz (${count} otázok)`;
   renderQuestion();
 }
 
@@ -393,10 +413,12 @@ async function finishQuiz(set) {
   if (activeSet === "entry") {
     updates.entryQuizDone = true;
     updates.entryScore = score;
+    updates.entryTotal = set.length;
     updates.entryAnswers = answers;
   } else {
     updates.exitQuizDone = true;
     updates.exitScore = score;
+    updates.exitTotal = set.length;
     updates.exitAnswers = answers;
   }
   await updateDoc(doc(db, "registrations", code), updates);
@@ -412,9 +434,13 @@ async function finishQuiz(set) {
   const compareBox = document.getElementById("compareBox");
   compareBox.innerHTML = "";
   if (activeSet === "exit" && registration.entryScore != null) {
-    const diff = registration.exitScore - registration.entryScore;
-    const diffText = diff > 0 ? `zlepšenie o ${diff} body 🎉` : diff === 0 ? "rovnaký výsledok" : `pokles o ${Math.abs(diff)} body`;
-    compareBox.innerHTML = `<p>Vstupný kvíz: <strong>${registration.entryScore}/8</strong> → Výstupný kvíz: <strong>${registration.exitScore}/8</strong> (${diffText})</p>`;
+    const entryTotal = registration.entryTotal || 8;
+    const exitTotal = registration.exitTotal || 8;
+    const entryPctCmp = Math.round((registration.entryScore / entryTotal) * 100);
+    const exitPctCmp = Math.round((registration.exitScore / exitTotal) * 100);
+    const diff = exitPctCmp - entryPctCmp;
+    const diffText = diff > 0 ? `zlepšenie o ${diff} % 🎉` : diff === 0 ? "rovnaký výsledok" : `pokles o ${Math.abs(diff)} %`;
+    compareBox.innerHTML = `<p>Vstupný kvíz: <strong>${registration.entryScore}/${entryTotal}</strong> → Výstupný kvíz: <strong>${registration.exitScore}/${exitTotal}</strong> (${diffText})</p>`;
   }
 
   const resultActions = document.getElementById("resultActions");
@@ -435,15 +461,15 @@ function showFinalResult() {
   resultCard.style.display = "none";
   certWrap.style.display = "block";
 
-  const entryPct = registration.entryScore != null ? Math.round((registration.entryScore / 8) * 100) : null;
-  const exitPct = registration.exitScore != null ? Math.round((registration.exitScore / 8) * 100) : null;
+  const entryPct = registration.entryScore != null ? Math.round((registration.entryScore / (registration.entryTotal || 8)) * 100) : null;
+  const exitPct = registration.exitScore != null ? Math.round((registration.exitScore / (registration.exitTotal || 8)) * 100) : null;
 
   document.getElementById("certificate").innerHTML = `
     <h2>Certifikát o absolvovaní</h2>
     <p>Tento certifikát potvrdzuje, že</p>
     <div class="name">${registration.fullName}</div>
     <p>úspešne absolvoval/a workshop</p>
-    <p style="font-weight:700;">„Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“</p>
+    <p style="font-weight:700;">„${workshopDetails?.title || "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach"}“</p>
     ${entryPct != null && exitPct != null ? `<p>Vstupný kvíz: <strong>${entryPct}%</strong> &nbsp;→&nbsp; Výstupný kvíz: <strong>${exitPct}%</strong></p>` : ""}
     <p style="color:var(--muted); font-size:.85rem;">Kód účastníka: ${code}</p>
   `;
@@ -486,7 +512,7 @@ document.getElementById("showQrBtn").addEventListener("click", () => {
 
 document.getElementById("icsDownloadBtn").addEventListener("click", () => {
   if (currentTerm) {
-    downloadICS(currentTerm);
+    downloadICS(currentTerm, workshopDetails);
   } else {
     alert("Termín sa nepodarilo načítať.");
   }

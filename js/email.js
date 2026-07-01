@@ -4,7 +4,7 @@ import { formatDateTime } from "./util.js";
 
 export const DEFAULT_EMAIL_TEMPLATE = {
   subject: "Potvrdenie registrácie – Workshop AI a financie",
-  body: "Dobrý deň {{meno}},\n\nďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.\n\nVáš termín: {{termin}}\nVáš prihlasovací kód (uschovajte si ho): {{kod}}\n\nTešíme sa na Vás!"
+  body: "<p>Dobrý deň {{meno}},</p><p>ďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.</p><p>Váš termín: {{termin}}<br>Váš prihlasovací kód (uschovajte si ho): <strong>{{kod}}</strong></p><p>Tešíme sa na Vás!</p>"
 };
 
 export function initEmailjs() {
@@ -31,7 +31,7 @@ export async function sendConfirmationEmail(db, registration, term) {
   let subject = fill(tpl.subject || DEFAULT_EMAIL_TEMPLATE.subject);
   let body = fill(tpl.body || DEFAULT_EMAIL_TEMPLATE.body);
   if (registration.status === "waitlist") {
-    body += "\n\n(Momentálne ste zaradený/á na náhradnú listinu, budeme Vás kontaktovať, ak sa uvoľní miesto.)";
+    body += "<p><em>(Momentálne ste zaradený/á na náhradnú listinu, budeme Vás kontaktovať, ak sa uvoľní miesto.)</em></p>";
   }
 
   await window.emailjs.send(emailjsConfig.serviceId, emailjsConfig.templateId, {

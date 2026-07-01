@@ -7,7 +7,7 @@ import {
 import {
   getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, applyStoredTheme, toggleTheme } from "./util.js";
+import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, applyStoredTheme, toggleTheme, generateCode } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 import { initEmailjs, sendConfirmationEmail } from "./email.js";
 
@@ -103,6 +103,7 @@ async function loadAll() {
 
   renderAlerts();
   renderTermsEditor();
+  await loadQuizRestrictionSetting();
   renderTermFilter();
   renderTable();
   renderStats();
@@ -110,6 +111,7 @@ async function loadAll() {
   await loadQuestionsIntoEditor();
   await loadEmailTemplate();
   await loadLandingContent();
+  await loadWorkshopDetails();
   await loadMaterials();
   await loadAuditLog();
 }
@@ -174,6 +176,11 @@ function renderTermsEditor() {
   }
 }
 
+async function loadQuizRestrictionSetting() {
+  const snap = await getDoc(doc(db, "settings", "quizRestriction"));
+  document.getElementById("restrictQuizDayCheck").checked = snap.exists() ? !!snap.data().restrictToWorkshopDay : false;
+}
+
 function toLocalInputValue(iso) {
   const d = new Date(iso);
   const pad = (n) => String(n).padStart(2, "0");
@@ -200,6 +207,11 @@ document.getElementById("saveTermsBtn").addEventListener("click", async () => {
       { merge: true }
     );
   }
+
+  await setDoc(doc(db, "settings", "quizRestriction"), {
+    restrictToWorkshopDay: document.getElementById("restrictQuizDayCheck").checked
+  });
+
   document.getElementById("termsSaveMsg").style.display = "block";
   setTimeout(() => (document.getElementById("termsSaveMsg").style.display = "none"), 3000);
   await loadAll();
@@ -217,7 +229,116 @@ function renderTermFilter() {
     sel.appendChild(opt);
   });
   sel.value = prev;
+
+  const newRegSel = document.getElementById("newRegTerm");
+  newRegSel.innerHTML = "";
+  terms.forEach((t) => {
+    const remaining = (t.capacity || 10) - (t.booked || 0);
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = `${formatDateTime(t.datetime)} (${remaining > 0 ? `voľné: ${remaining}` : "plno, náhradná listina"})`;
+    newRegSel.appendChild(opt);
+  });
 }
+
+// ---------- MANUAL REGISTRANT ----------
+document.getElementById("addRegistrantBtn").addEventListener("click", () => {
+  const form = document.getElementById("addRegistrantForm");
+  form.style.display = form.style.display === "none" ? "block" : "none";
+});
+document.getElementById("cancelNewRegistrantBtn").addEventListener("click", () => {
+  document.getElementById("addRegistrantForm").style.display = "none";
+});
+
+document.getElementById("submitNewRegistrantBtn").addEventListener("click", async () => {
+  const errBox = document.getElementById("addRegistrantError");
+  errBox.style.display = "none";
+
+  const firstName = document.getElementById("newRegFirstName").value.trim();
+  const lastName = document.getElementById("newRegLastName").value.trim();
+  const city = document.getElementById("newRegCity").value.trim();
+  const email = document.getElementById("newRegEmail").value.trim();
+  const phone = document.getElementById("newRegPhone").value.trim();
+  const termId = document.getElementById("newRegTerm").value;
+
+  if (!firstName || !lastName || !city || !email || !phone || !termId) {
+    errBox.textContent = "Prosím vyplňte všetky polia.";
+    errBox.style.display = "block";
+    return;
+  }
+
+  const fullName = `${firstName} ${lastName}`;
+  const submitBtn = document.getElementById("submitNewRegistrantBtn");
+  submitBtn.disabled = true;
+
+  try {
+    let finalCode = null;
+    await runTransaction(db, async (tx) => {
+      const termRef = doc(db, "terms", termId);
+      const termSnap = await tx.get(termRef);
+      if (!termSnap.exists()) throw new Error("Termín už neexistuje.");
+      const data = termSnap.data();
+      const booked = data.booked || 0;
+      const capacity = data.capacity || 10;
+      const waitlistCap = data.waitlistCapacity || 0;
+      const waitlistCount = data.waitlistCount || 0;
+
+      let status;
+      if (booked < capacity) {
+        status = "confirmed";
+      } else if (waitlistCount < waitlistCap) {
+        status = "waitlist";
+      } else {
+        throw new Error("Tento termín je plne obsadený aj s náhradnou listinou.");
+      }
+
+      let code, codeRef, codeSnap;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        code = generateCode(5);
+        codeRef = doc(db, "registrations", code);
+        codeSnap = await tx.get(codeRef);
+        if (!codeSnap.exists()) break;
+        code = null;
+      }
+      if (!code) throw new Error("Nepodarilo sa vygenerovať kód, skúste to prosím znova.");
+
+      if (status === "confirmed") {
+        tx.update(termRef, { booked: booked + 1 });
+      } else {
+        tx.update(termRef, { waitlistCount: waitlistCount + 1 });
+      }
+
+      tx.set(codeRef, {
+        code,
+        firstName, lastName, fullName, city, email, phone,
+        termId, status,
+        attended: false,
+        adminNotes: "Pridané ručne adminom.",
+        survey: { source: "Pridané adminom", devices: [], aiExperience: "Pridané adminom", digitalSkill: "Pridané adminom", reason: "Pridané adminom" },
+        entryQuizDone: false,
+        exitQuizDone: false,
+        entryScore: null,
+        exitScore: null,
+        entryAnswers: null,
+        exitAnswers: null,
+        feedback: null,
+        createdAt: Date.now()
+      });
+      finalCode = code;
+    });
+
+    await logAudit("manual-add", finalCode, { fullName, email, termId });
+    document.getElementById("addRegistrantForm").style.display = "none";
+    ["newRegFirstName", "newRegLastName", "newRegCity", "newRegEmail", "newRegPhone"].forEach((id) => (document.getElementById(id).value = ""));
+    alert(`Účastník bol pridaný. Jeho prihlasovací kód je: ${finalCode}`);
+    await loadAll();
+  } catch (err) {
+    errBox.textContent = err.message || "Nastala chyba pri pridávaní účastníka.";
+    errBox.style.display = "block";
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
 
 function rowClass(r) {
   if (r.status === "waitlist") return "row-waitlist";
@@ -272,8 +393,8 @@ function renderTable() {
         <td>${r.fullName}</td>
         <td>${r.email}</td>
         <td>${r.phone}</td>
-        <td>${r.entryScore != null ? r.entryScore + "/8" : "–"}</td>
-        <td>${r.exitScore != null ? r.exitScore + "/8" : "–"}</td>
+        <td>${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
+        <td>${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
         <td><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span>${warningIcon}</td>
         <td><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
         <td><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
@@ -608,23 +729,25 @@ function renderResultsTable() {
   `;
   const tbody = table.querySelector("tbody");
   rows.forEach((r) => {
+    const entryTotal = r.entryTotal || 8;
+    const exitTotal = r.exitTotal || 8;
     const entry = r.entryScore != null ? r.entryScore : null;
     const exit = r.exitScore != null ? r.exitScore : null;
-    const entryPct = entry != null ? Math.round((entry / 8) * 100) : null;
-    const exitPct = exit != null ? Math.round((exit / 8) * 100) : null;
+    const entryPct = entry != null ? Math.round((entry / entryTotal) * 100) : null;
+    const exitPct = exit != null ? Math.round((exit / exitTotal) * 100) : null;
     let diffText = "–";
     let diffColor = "";
-    if (entry != null && exit != null) {
-      const diff = exit - entry;
+    if (entryPct != null && exitPct != null) {
+      const diff = exitPct - entryPct;
       diffColor = diff > 0 ? "#106c53" : diff < 0 ? "#9c1c1f" : "#93650a";
-      diffText = diff > 0 ? `+${diff}` : `${diff}`;
+      diffText = diff > 0 ? `+${diff} %` : `${diff} %`;
     }
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${r.code}</strong></td>
       <td>${r.fullName}</td>
-      <td>${entry != null ? `${entry}/8 (${entryPct} %)` : "–"}</td>
-      <td>${exit != null ? `${exit}/8 (${exitPct} %)` : "–"}</td>
+      <td>${entry != null ? `${entry}/${entryTotal} (${entryPct} %)` : "–"}</td>
+      <td>${exit != null ? `${exit}/${exitTotal} (${exitPct} %)` : "–"}</td>
       <td style="font-weight:700; color:${diffColor || "inherit"};">${diffText}</td>
     `;
     tbody.appendChild(tr);
@@ -762,7 +885,25 @@ function renderQuestionsEditor() {
 
   questions.forEach((q, qi) => {
     const wrap = document.createElement("fieldset");
-    wrap.innerHTML = `<legend>Otázka ${qi + 1}</legend>`;
+    const legend = document.createElement("legend");
+    legend.textContent = `Otázka ${qi + 1}`;
+    wrap.appendChild(legend);
+
+    const deleteQBtn = document.createElement("button");
+    deleteQBtn.type = "button";
+    deleteQBtn.className = "danger";
+    deleteQBtn.textContent = "🗑️ Vymazať túto otázku";
+    deleteQBtn.style.marginBottom = "12px";
+    deleteQBtn.addEventListener("click", () => {
+      if (questionSets[activeQSet].length <= 1) {
+        alert("Kvíz musí mať aspoň jednu otázku.");
+        return;
+      }
+      if (!confirm(`Naozaj vymazať otázku ${qi + 1}?`)) return;
+      questionSets[activeQSet].splice(qi, 1);
+      renderQuestionsEditor();
+    });
+    wrap.appendChild(deleteQBtn);
 
     const qLabel = document.createElement("label");
     qLabel.textContent = "Znenie otázky";
@@ -805,6 +946,20 @@ function renderQuestionsEditor() {
 
     editor.appendChild(wrap);
   });
+
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "secondary";
+  addBtn.textContent = "➕ Pridať novú otázku";
+  addBtn.addEventListener("click", () => {
+    questionSets[activeQSet].push({
+      q: "Nová otázka – upravte znenie",
+      options: ["Možnosť 1", "Možnosť 2", "Možnosť 3", "Možnosť 4"],
+      correct: 0
+    });
+    renderQuestionsEditor();
+  });
+  editor.appendChild(addBtn);
 }
 
 document.getElementById("saveQuestionsBtn").addEventListener("click", async () => {
@@ -817,20 +972,27 @@ document.getElementById("saveQuestionsBtn").addEventListener("click", async () =
 // ---------- EMAIL TEMPLATE ----------
 const DEFAULT_EMAIL_TEMPLATE = {
   subject: "Potvrdenie registrácie – Workshop AI a financie",
-  body: "Dobrý deň {{meno}},\n\nďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.\n\nVáš termín: {{termin}}\nVáš prihlasovací kód (uschovajte si ho): {{kod}}\n\nTešíme sa na Vás!"
+  body: "<p>Dobrý deň {{meno}},</p><p>ďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.</p><p>Váš termín: {{termin}}<br>Váš prihlasovací kód (uschovajte si ho): <strong>{{kod}}</strong></p><p>Tešíme sa na Vás!</p>"
 };
 
 async function loadEmailTemplate() {
   const snap = await getDoc(doc(db, "settings", "emailTemplate"));
   const data = snap.exists() ? snap.data() : DEFAULT_EMAIL_TEMPLATE;
   document.getElementById("emailSubjectInput").value = data.subject || DEFAULT_EMAIL_TEMPLATE.subject;
-  document.getElementById("emailBodyInput").value = data.body || DEFAULT_EMAIL_TEMPLATE.body;
+  document.getElementById("emailBodyInput").innerHTML = data.body || DEFAULT_EMAIL_TEMPLATE.body;
 }
+
+document.querySelectorAll(".rte-toolbar button").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.getElementById("emailBodyInput").focus();
+    document.execCommand(btn.dataset.cmd, false, null);
+  });
+});
 
 document.getElementById("saveEmailBtn").addEventListener("click", async () => {
   await setDoc(doc(db, "settings", "emailTemplate"), {
     subject: document.getElementById("emailSubjectInput").value,
-    body: document.getElementById("emailBodyInput").value
+    body: document.getElementById("emailBodyInput").innerHTML
   });
   document.getElementById("emailSaveMsg").style.display = "block";
   setTimeout(() => (document.getElementById("emailSaveMsg").style.display = "none"), 3000);
@@ -855,56 +1017,114 @@ document.getElementById("saveLandingBtn").addEventListener("click", async () => 
   setTimeout(() => (document.getElementById("landingSaveMsg").style.display = "none"), 3000);
 });
 
+// ---------- WORKSHOP DETAILS ----------
+async function loadWorkshopDetails() {
+  const snap = await getDoc(doc(db, "settings", "workshopDetails"));
+  const data = snap.exists() ? snap.data() : {};
+  document.getElementById("workshopTitleInput").value = data.title || "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach";
+  document.getElementById("workshopLocationInput").value = data.location || "";
+  document.getElementById("workshopDurationInput").value = data.durationHours || 2;
+  document.getElementById("workshopDescriptionInput").value = data.description || "";
+}
+
+document.getElementById("saveWorkshopDetailsBtn").addEventListener("click", async () => {
+  await setDoc(doc(db, "settings", "workshopDetails"), {
+    title: document.getElementById("workshopTitleInput").value,
+    location: document.getElementById("workshopLocationInput").value,
+    durationHours: parseFloat(document.getElementById("workshopDurationInput").value) || 2,
+    description: document.getElementById("workshopDescriptionInput").value
+  });
+  document.getElementById("workshopDetailsSaveMsg").style.display = "block";
+  setTimeout(() => (document.getElementById("workshopDetailsSaveMsg").style.display = "none"), 3000);
+});
+
 // ---------- MATERIALS ----------
+const MAX_MATERIAL_BYTES = 700 * 1024;
 let materials = [];
 
 async function loadMaterials() {
-  const snap = await getDoc(doc(db, "settings", "materials"));
-  materials = snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : [];
-  renderMaterialsEditor();
+  const snap = await getDocs(collection(db, "materials"));
+  materials = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.uploadedAt || 0) - (b.uploadedAt || 0));
+  renderMaterialsList();
 }
 
-function renderMaterialsEditor() {
-  const editor = document.getElementById("materialsEditor");
-  editor.innerHTML = "";
+function renderMaterialsList() {
+  const container = document.getElementById("materialsList");
   if (materials.length === 0) {
-    editor.innerHTML = "<p style='color:var(--muted)'>Zatiaľ žiadne materiály. Pridaj prvý odkaz nižšie.</p>";
+    container.innerHTML = "<p style='color:var(--muted)'>Zatiaľ žiadne nahraté materiály.</p>";
     return;
   }
-  materials.forEach((m, i) => {
-    const row = document.createElement("div");
-    row.style.display = "grid";
-    row.style.gridTemplateColumns = "1fr 2fr auto";
-    row.style.gap = "8px";
-    row.style.alignItems = "end";
-    row.style.marginBottom = "10px";
-    row.innerHTML = `
-      <div><label>Názov</label><input type="text" class="material-title" value="${m.title || ""}" placeholder="napr. Prezentácia zo workshopu" /></div>
-      <div><label>Odkaz (URL)</label><input type="text" class="material-url" value="${m.url || ""}" placeholder="https://..." /></div>
-      <button type="button" class="danger remove-material-btn" style="height:42px;">🗑️</button>
-    `;
-    row.querySelector(".material-title").addEventListener("input", (e) => (materials[i].title = e.target.value));
-    row.querySelector(".material-url").addEventListener("input", (e) => (materials[i].url = e.target.value));
-    row.querySelector(".remove-material-btn").addEventListener("click", () => {
-      materials.splice(i, 1);
-      renderMaterialsEditor();
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead><tr><th>Názov</th><th>Súbor</th><th>Veľkosť</th><th></th></tr></thead>
+    <tbody>
+      ${materials.map((m) => `
+        <tr>
+          <td>${m.title}</td>
+          <td>${m.filename || ""}</td>
+          <td>${m.sizeBytes ? Math.round(m.sizeBytes / 1024) + " KB" : ""}</td>
+          <td><button type="button" class="danger remove-material-btn" data-id="${m.id}">🗑️ Vymazať</button></td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+  table.querySelectorAll(".remove-material-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Naozaj vymazať tento materiál?")) return;
+      await deleteDoc(doc(db, "materials", btn.dataset.id));
+      await loadMaterials();
     });
-    editor.appendChild(row);
   });
+  container.innerHTML = "";
+  container.appendChild(table);
 }
 
-document.getElementById("addMaterialBtn").addEventListener("click", () => {
-  materials.push({ title: "", url: "" });
-  renderMaterialsEditor();
-});
+document.getElementById("uploadMaterialBtn").addEventListener("click", async () => {
+  const errBox = document.getElementById("materialsUploadError");
+  errBox.style.display = "none";
+  const title = document.getElementById("newMaterialTitle").value.trim();
+  const fileInput = document.getElementById("newMaterialFile");
+  const file = fileInput.files[0];
 
-document.getElementById("saveMaterialsBtn").addEventListener("click", async () => {
-  const cleaned = materials.filter((m) => m.title.trim() && m.url.trim());
-  await setDoc(doc(db, "settings", "materials"), { items: cleaned });
-  materials = cleaned;
-  renderMaterialsEditor();
-  document.getElementById("materialsSaveMsg").style.display = "block";
-  setTimeout(() => (document.getElementById("materialsSaveMsg").style.display = "none"), 3000);
+  if (!title || !file) {
+    errBox.textContent = "Prosím vyplň názov a vyber súbor.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (file.size > MAX_MATERIAL_BYTES) {
+    errBox.textContent = `Súbor je príliš veľký (${Math.round(file.size / 1024)} KB). Maximálna veľkosť je cca ${Math.round(MAX_MATERIAL_BYTES / 1024)} KB kvôli bezplatnému plánu databázy.`;
+    errBox.style.display = "block";
+    return;
+  }
+
+  const uploadBtn = document.getElementById("uploadMaterialBtn");
+  uploadBtn.disabled = true;
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    await addDoc(collection(db, "materials"), {
+      title,
+      filename: file.name,
+      mimeType: file.type,
+      sizeBytes: file.size,
+      dataUrl,
+      uploadedAt: Date.now()
+    });
+
+    document.getElementById("newMaterialTitle").value = "";
+    fileInput.value = "";
+    await loadMaterials();
+  } catch {
+    errBox.textContent = "Nahrávanie zlyhalo, skús to prosím znova.";
+    errBox.style.display = "block";
+  } finally {
+    uploadBtn.disabled = false;
+  }
 });
 
 // ---------- AUDIT LOG ----------
