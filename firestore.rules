@@ -7,11 +7,15 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Termíny workshopu - verejne čitateľné (aby si ich videla registrácia),
-    // upravovať ich môže len prihlásený admin.
+    // Termíny workshopu - verejne čitateľné (aby si ich videla registrácia).
+    // Vytvárať/mazať termíny alebo meniť dátum/kapacitu môže len admin.
+    // Verejný registračný formulár smie meniť LEN pole "booked" (počet
+    // obsadených miest) pri zápise nového účastníka.
     match /terms/{termId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() ||
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['booked']);
     }
 
     // Registrácie - dokument ID je tajný 5-miestny kód účastníka.
