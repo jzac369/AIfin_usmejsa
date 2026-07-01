@@ -16,10 +16,10 @@
 // ============================================================
 
 export const firebaseConfig = {
-  apiKey: "VLOZ_SEM_API_KEY",
-  authDomain: "VLOZ_SEM_PROJEKT.firebaseapp.com",
-  projectId: "VLOZ_SEM_PROJEKT_ID",
-  storageBucket: "VLOZ_SEM_PROJEKT.appspot.com",
-  messagingSenderId: "VLOZ_SEM_SENDER_ID",
-  appId: "VLOZ_SEM_APP_ID"
+  apiKey: "AIzaSyAwmXjLB079vLxnn3L7DcXcq5vOLKDvC9M",
+  authDomain: "aifin-usmejsa-61c81.firebaseapp.com",
+  projectId: "aifin-usmejsa-61c81",
+  storageBucket: "aifin-usmejsa-61c81.firebasestorage.app",
+  messagingSenderId: "530051162073",
+  appId: "1:530051162073:web:12dff0fb171c6e17f383c8"
 };
