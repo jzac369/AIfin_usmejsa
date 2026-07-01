@@ -38,9 +38,10 @@
 
   <div id="dashboard" style="display:none;">
 
-    <div class="tabs">
+    <div class="tabs" id="mainTabs">
       <button class="active" data-tab="terms">📅 Termíny</button>
       <button data-tab="registrations">👥 Prihlásení</button>
+      <button data-tab="questions">❓ Otázky</button>
       <button data-tab="stats">📊 Štatistiky</button>
     </div>
 
@@ -64,18 +65,23 @@
           <select id="termFilter"><option value="">Všetky termíny</option></select>
           <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
         </div>
-        <div class="table-wrap">
-          <table id="regTable">
-            <thead>
-              <tr>
-                <th>Kód</th><th>Meno</th><th>Mesto</th><th>Email</th><th>Telefón</th><th>Termín</th>
-                <th>Zdroj</th><th>Zariadenia</th><th>Skúsenosti AI</th><th>Dôvod</th>
-                <th>Vstup.</th><th>Výst.</th><th></th>
-              </tr>
-            </thead>
-            <tbody id="regTableBody"></tbody>
-          </table>
+        <div class="table-wrap" id="regGroupsContainer"></div>
+      </div>
+    </div>
+
+    <div id="tab-questions" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Editácia otázok kvízu</h2>
+        <p style="color:var(--muted)">Uprav znenie otázok a možností pre vstupný a výstupný kvíz (8 otázok, 4 možnosti). Označ, ktorá možnosť je správna.</p>
+        <div class="tabs">
+          <button class="active" data-qset="entry">Vstupný kvíz</button>
+          <button data-qset="exit">Výstupný kvíz</button>
         </div>
+        <div id="questionsEditor"></div>
+        <div class="actions">
+          <button id="saveQuestionsBtn">💾 Uložiť otázky</button>
+        </div>
+        <div id="questionsSaveMsg" class="alert success" style="display:none;">Otázky boli uložené.</div>
       </div>
     </div>
 

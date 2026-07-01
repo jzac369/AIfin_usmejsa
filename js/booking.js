@@ -8,6 +8,19 @@ import { generateCode, formatDateTime, downloadICS, applyStoredTheme, toggleThem
 applyStoredTheme();
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
 
+function wireOtherToggle(radioOrCheckboxId, textId) {
+  const el = document.getElementById(radioOrCheckboxId);
+  const textEl = document.getElementById(textId);
+  const update = () => { textEl.style.display = el.checked ? "block" : "none"; };
+  el.addEventListener("change", update);
+  document.querySelectorAll(`input[name="${el.name}"]`).forEach((other) => {
+    if (other !== el) other.addEventListener("change", update);
+  });
+}
+wireOtherToggle("sourceOther", "sourceOtherText");
+wireOtherToggle("devicesOther", "devicesOtherText");
+wireOtherToggle("reasonOther", "reasonOtherText");
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -75,11 +88,22 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
   const city = document.getElementById("city").value.trim();
   const email = document.getElementById("email").value.trim();
   const phone = document.getElementById("phone").value.trim();
-  const source = document.querySelector('input[name="source"]:checked')?.value;
-  const devices = [...document.querySelectorAll('input[name="devices"]:checked')].map((el) => el.value);
+  let source = document.querySelector('input[name="source"]:checked')?.value;
+  if (source === "Iné" && document.getElementById("sourceOtherText").value.trim()) {
+    source = `Iné: ${document.getElementById("sourceOtherText").value.trim()}`;
+  }
+  const devices = [...document.querySelectorAll('input[name="devices"]:checked')].map((el) => {
+    if (el.value === "Iné" && document.getElementById("devicesOtherText").value.trim()) {
+      return `Iné: ${document.getElementById("devicesOtherText").value.trim()}`;
+    }
+    return el.value;
+  });
   const aiExperience = document.querySelector('input[name="aiExperience"]:checked')?.value;
   const digitalSkill = document.querySelector('input[name="digitalSkill"]:checked')?.value;
-  const reason = document.querySelector('input[name="reason"]:checked')?.value;
+  let reason = document.querySelector('input[name="reason"]:checked')?.value;
+  if (reason === "Iné" && document.getElementById("reasonOtherText").value.trim()) {
+    reason = `Iné: ${document.getElementById("reasonOtherText").value.trim()}`;
+  }
 
   if (!fullName || !city || !email || !phone || !source || !aiExperience || !digitalSkill || !reason) {
     errBox.textContent = "Prosím vyplňte všetky povinné polia a dotazník.";

@@ -59,7 +59,8 @@
       <div class="radio-row"><input type="radio" name="source" value="Odporúčanie priateľa alebo rodiny"> <label style="margin:0;font-weight:400;">Odporúčanie priateľa / rodiny</label></div>
       <div class="radio-row"><input type="radio" name="source" value="Plagát alebo leták"> <label style="margin:0;font-weight:400;">Plagát / leták</label></div>
       <div class="radio-row"><input type="radio" name="source" value="Webstránka mesta alebo knižnice"> <label style="margin:0;font-weight:400;">Webstránka mesta / knižnice</label></div>
-      <div class="radio-row"><input type="radio" name="source" value="Iné"> <label style="margin:0;font-weight:400;">Iné</label></div>
+      <div class="radio-row"><input type="radio" name="source" value="Iné" id="sourceOther"> <label style="margin:0;font-weight:400;">Iné</label></div>
+      <input type="text" id="sourceOtherText" placeholder="Doplňte prosím..." style="display:none; margin-top:6px;" />
     </fieldset>
 
     <fieldset>
@@ -67,7 +68,8 @@
       <div class="checkbox-row"><input type="checkbox" name="devices" value="Tablet"> <label style="margin:0;font-weight:400;">Tablet</label></div>
       <div class="checkbox-row"><input type="checkbox" name="devices" value="Mobilný telefón"> <label style="margin:0;font-weight:400;">Mobilný telefón</label></div>
       <div class="checkbox-row"><input type="checkbox" name="devices" value="Počítač / notebook"> <label style="margin:0;font-weight:400;">Počítač / notebook</label></div>
-      <div class="checkbox-row"><input type="checkbox" name="devices" value="Iné"> <label style="margin:0;font-weight:400;">Iné</label></div>
+      <div class="checkbox-row"><input type="checkbox" name="devices" value="Iné" id="devicesOther"> <label style="margin:0;font-weight:400;">Iné</label></div>
+      <input type="text" id="devicesOtherText" placeholder="Doplňte prosím..." style="display:none; margin-top:6px;" />
     </fieldset>
 
     <fieldset>
@@ -93,7 +95,8 @@
       <div class="radio-row"><input type="radio" name="reason" value="Obava z podvodov"> <label style="margin:0;font-weight:400;">Obava z podvodov</label></div>
       <div class="radio-row"><input type="radio" name="reason" value="Zlepšiť finančné rozhodnutia"> <label style="margin:0;font-weight:400;">Chcem zlepšiť svoje finančné rozhodnutia</label></div>
       <div class="radio-row"><input type="radio" name="reason" value="Odporučil mi niekto"> <label style="margin:0;font-weight:400;">Odporučil mi to niekto</label></div>
-      <div class="radio-row"><input type="radio" name="reason" value="Iné"> <label style="margin:0;font-weight:400;">Iné</label></div>
+      <div class="radio-row"><input type="radio" name="reason" value="Iné" id="reasonOther"> <label style="margin:0;font-weight:400;">Iné</label></div>
+      <input type="text" id="reasonOtherText" placeholder="Doplňte prosím..." style="display:none; margin-top:6px;" />
     </fieldset>
 
     <label class="checkbox-row" style="font-weight:400;">
@@ -110,13 +113,12 @@
 
   <div class="card" id="successCard" style="display:none;">
     <h2>✅ Ste prihlásený/á!</h2>
-    <p>Toto je váš osobný <strong>5-miestny kód</strong>. Uschovajte si ho – budete ho potrebovať na prihlásenie do vstupného a výstupného kvízu v deň workshopu.</p>
+    <p>Toto je váš osobný <strong>5-miestny kód</strong>, ktorý budete potrebovať na prihlásenie do vstupného a výstupného kvízu v deň workshopu.</p>
     <div class="code-display" id="codeOut"></div>
-    <div class="qr-box" id="qrBox"></div>
-    <p id="successTermInfo" style="color:var(--muted)"></p>
-    <div class="actions">
+    <div class="qr-box" id="qrBox" style="display:flex; justify-content:center;"></div>
+    <p id="successTermInfo" style="color:var(--muted); text-align:center;"></p>
+    <div class="actions" style="justify-content:center;">
       <button id="icsBtn" class="secondary">📅 Pridať do kalendára</button>
-      <a class="btn" href="kviz.html">Prejsť na kvíz →</a>
     </div>
   </div>
 

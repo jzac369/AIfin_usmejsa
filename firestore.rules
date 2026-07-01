@@ -38,5 +38,12 @@ service cloud.firestore {
                         .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers']);
       allow delete: if isAdmin();
     }
+
+    // Otázky vstupného/výstupného kvízu (dokumenty "entry" a "exit").
+    // Verejne čitateľné (potrebuje ich kviz.html), upravovať ich môže len admin.
+    match /quizQuestions/{setId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

@@ -10,6 +10,21 @@ document.getElementById("themeBtn").addEventListener("click", toggleTheme);
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+let quizSets = { entry: ENTRY_QUIZ, exit: EXIT_QUIZ };
+
+async function loadQuestions() {
+  const [entrySnap, exitSnap] = await Promise.all([
+    getDoc(doc(db, "quizQuestions", "entry")),
+    getDoc(doc(db, "quizQuestions", "exit"))
+  ]);
+  if (entrySnap.exists() && Array.isArray(entrySnap.data().questions)) {
+    quizSets.entry = entrySnap.data().questions;
+  }
+  if (exitSnap.exists() && Array.isArray(exitSnap.data().questions)) {
+    quizSets.exit = exitSnap.data().questions;
+  }
+}
+
 let registration = null;
 let code = null;
 let activeSet = null; // "entry" | "exit"
@@ -95,7 +110,7 @@ function startQuiz(set) {
 }
 
 function renderQuestion() {
-  const set = activeSet === "entry" ? ENTRY_QUIZ : EXIT_QUIZ;
+  const set = quizSets[activeSet];
   const q = set[currentIndex];
   document.getElementById("progressFill").style.width = `${(currentIndex / set.length) * 100}%`;
 
@@ -190,3 +205,5 @@ function showFinalResult() {
 }
 
 document.getElementById("printCertBtn").addEventListener("click", () => window.print());
+
+loadQuestions();

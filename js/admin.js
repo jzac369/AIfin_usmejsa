@@ -4,9 +4,10 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, getDocs, doc, setDoc
+  getFirestore, collection, getDocs, doc, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { formatDateTime, exportRegistrationsCSV, applyStoredTheme, toggleTheme } from "./util.js";
+import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 
 applyStoredTheme();
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
@@ -55,9 +56,9 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ---------- TABS ----------
-document.querySelectorAll(".tabs button").forEach((btn) => {
+document.querySelectorAll("#mainTabs button").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll("#mainTabs button").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     document.querySelectorAll(".tab-panel").forEach((p) => (p.style.display = "none"));
     document.getElementById(`tab-${btn.dataset.tab}`).style.display = "block";
@@ -77,6 +78,7 @@ async function loadAll() {
   renderTermFilter();
   renderTable();
   renderStats();
+  await loadQuestionsIntoEditor();
 }
 
 // ---------- TERMS EDITOR ----------
@@ -138,21 +140,64 @@ function renderTermFilter() {
 }
 
 function renderTable() {
-  const tbody = document.getElementById("regTableBody");
+  const container = document.getElementById("regGroupsContainer");
   const search = document.getElementById("searchInput").value.toLowerCase();
   const termFilter = document.getElementById("termFilter").value;
   const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
 
-  tbody.innerHTML = "";
-  registrations
+  const filtered = registrations
     .filter((r) => !termFilter || r.termId === termFilter)
     .filter((r) => {
       if (!search) return true;
       return [r.fullName, r.city, r.email, r.code].some((v) => (v || "").toLowerCase().includes(search));
-    })
-    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-    .forEach((r) => {
-      const term = termMap[r.termId];
+    });
+
+  // Zoskup účastníkov podľa termínu (dátumu), zoradené chronologicky.
+  const groups = {};
+  filtered.forEach((r) => {
+    const key = r.termId || "bez-terminu";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(r);
+  });
+
+  const groupKeys = Object.keys(groups).sort((a, b) => {
+    const ta = termMap[a]?.order ?? 999;
+    const tb = termMap[b]?.order ?? 999;
+    return ta - tb;
+  });
+
+  container.innerHTML = "";
+
+  if (groupKeys.length === 0) {
+    container.innerHTML = "<p style='color:var(--muted)'>Žiadni prihlásení účastníci nezodpovedajú filtru.</p>";
+    return;
+  }
+
+  groupKeys.forEach((key) => {
+    const term = termMap[key];
+    const rows = groups[key].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+    const groupWrap = document.createElement("div");
+    groupWrap.style.marginBottom = "28px";
+    groupWrap.innerHTML = `
+      <h3 style="margin-bottom:8px; padding-bottom:8px; border-bottom:2px solid var(--primary);">
+        📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
+        <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${rows.length} ${rows.length === 1 ? "účastník" : rows.length < 5 ? "účastníci" : "účastníkov"})</span>
+      </h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Kód</th><th>Meno</th><th>Mesto</th><th>Email</th><th>Telefón</th>
+            <th>Zdroj</th><th>Zariadenia</th><th>Skúsenosti AI</th><th>Dôvod</th>
+            <th>Vstup.</th><th>Výst.</th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    `;
+
+    const tbody = groupWrap.querySelector("tbody");
+    rows.forEach((r) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><strong>${r.code}</strong></td>
@@ -160,7 +205,6 @@ function renderTable() {
         <td>${r.city}</td>
         <td>${r.email}</td>
         <td>${r.phone}</td>
-        <td>${term ? formatDateTime(term.datetime) : r.termId}</td>
         <td>${r.survey?.source ?? ""}</td>
         <td>${(r.survey?.devices ?? []).join(", ")}</td>
         <td>${r.survey?.aiExperience ?? ""}</td>
@@ -171,6 +215,9 @@ function renderTable() {
       `;
       tbody.appendChild(tr);
     });
+
+    container.appendChild(groupWrap);
+  });
 }
 
 document.getElementById("searchInput").addEventListener("input", renderTable);
@@ -254,3 +301,89 @@ function renderStats() {
     }
   });
 }
+
+// ---------- QUESTION EDITOR ----------
+let questionSets = { entry: null, exit: null };
+let activeQSet = "entry";
+
+async function loadQuestionsIntoEditor() {
+  const [entrySnap, exitSnap] = await Promise.all([
+    getDoc(doc(db, "quizQuestions", "entry")),
+    getDoc(doc(db, "quizQuestions", "exit"))
+  ]);
+  questionSets.entry = entrySnap.exists() && Array.isArray(entrySnap.data().questions)
+    ? entrySnap.data().questions
+    : JSON.parse(JSON.stringify(ENTRY_QUIZ));
+  questionSets.exit = exitSnap.exists() && Array.isArray(exitSnap.data().questions)
+    ? exitSnap.data().questions
+    : JSON.parse(JSON.stringify(EXIT_QUIZ));
+  renderQuestionsEditor();
+}
+
+document.querySelectorAll("[data-qset]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("[data-qset]").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeQSet = btn.dataset.qset;
+    renderQuestionsEditor();
+  });
+});
+
+function renderQuestionsEditor() {
+  const editor = document.getElementById("questionsEditor");
+  const questions = questionSets[activeQSet] || [];
+  editor.innerHTML = "";
+
+  questions.forEach((q, qi) => {
+    const wrap = document.createElement("fieldset");
+    wrap.innerHTML = `<legend>Otázka ${qi + 1}</legend>`;
+
+    const qLabel = document.createElement("label");
+    qLabel.textContent = "Znenie otázky";
+    const qInput = document.createElement("textarea");
+    qInput.rows = 2;
+    qInput.value = q.q;
+    qInput.addEventListener("input", () => (questionSets[activeQSet][qi].q = qInput.value));
+    wrap.appendChild(qLabel);
+    wrap.appendChild(qInput);
+
+    q.options.forEach((opt, oi) => {
+      const optLabel = document.createElement("label");
+      optLabel.style.fontWeight = "400";
+      optLabel.innerHTML = `Možnosť ${oi + 1} ${oi === q.correct ? '<span class="badge-pill ok">správna</span>' : ""}`;
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.gap = "8px";
+      row.style.alignItems = "center";
+
+      const optInput = document.createElement("input");
+      optInput.type = "text";
+      optInput.value = opt;
+      optInput.addEventListener("input", () => (questionSets[activeQSet][qi].options[oi] = optInput.value));
+
+      const correctBtn = document.createElement("button");
+      correctBtn.type = "button";
+      correctBtn.textContent = "Označiť ako správnu";
+      correctBtn.className = "secondary";
+      correctBtn.style.whiteSpace = "nowrap";
+      correctBtn.addEventListener("click", () => {
+        questionSets[activeQSet][qi].correct = oi;
+        renderQuestionsEditor();
+      });
+
+      row.appendChild(optInput);
+      row.appendChild(correctBtn);
+      wrap.appendChild(optLabel);
+      wrap.appendChild(row);
+    });
+
+    editor.appendChild(wrap);
+  });
+}
+
+document.getElementById("saveQuestionsBtn").addEventListener("click", async () => {
+  await setDoc(doc(db, "quizQuestions", "entry"), { questions: questionSets.entry });
+  await setDoc(doc(db, "quizQuestions", "exit"), { questions: questionSets.exit });
+  document.getElementById("questionsSaveMsg").style.display = "block";
+  setTimeout(() => (document.getElementById("questionsSaveMsg").style.display = "none"), 3000);
+});
