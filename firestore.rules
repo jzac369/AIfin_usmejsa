@@ -15,7 +15,7 @@ service cloud.firestore {
       allow read: if true;
       allow create, delete: if isAdmin();
       allow update: if isAdmin() ||
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['booked']);
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['booked','waitlistCount']);
     }
 
     // Registrácie - dokument ID je tajný 5-miestny kód účastníka.
@@ -25,8 +25,9 @@ service cloud.firestore {
     //   sa nedá k záznamu dostať.
     // - "list" (vypísanie VŠETKÝCH registrácií, napr. v admin zóne) je povolené
     //   iba prihlásenému adminovi.
-    // - "update" je obmedzené len na polia vzťahujúce sa na kvízy, aby účastník
-    //   cez svoj kód nemohol meniť svoje osobné údaje.
+    // - "update" bez admin prihlásenia je obmedzené len na polia, ktoré si
+    //   účastník smie meniť sám cez svoj kód (kvízy, zrušenie/presun, feedback).
+    //   Osobné údaje, interné poznámky a prezenciu smie meniť len admin.
     match /registrations/{code} {
       allow create: if request.resource.data.keys().hasAll(
                       ['fullName','city','email','phone','termId','survey','createdAt']
@@ -35,7 +36,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow update: if isAdmin() ||
                       request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers']);
+                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers','status','termId','feedback']);
       allow delete: if isAdmin();
     }
 
@@ -44,6 +45,18 @@ service cloud.firestore {
     match /quizQuestions/{setId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Nastavenia (text emailu, obsah úvodnej stránky) - verejne čitateľné,
+    // upravovať ich môže len admin.
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Interný log zmien vykonaných adminom - viditeľný a zapisovateľný len adminom.
+    match /auditLog/{entryId} {
+      allow read, create: if isAdmin();
     }
   }
 }

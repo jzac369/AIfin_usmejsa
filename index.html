@@ -22,8 +22,12 @@
 </header>
 
 <section class="hero">
-  <h1>Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach</h1>
-  <p>Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách. Vyberte si termín a zaregistrujte sa nižšie.</p>
+  <h1 id="heroTitle">Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach</h1>
+  <p id="heroSubtitle">Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách. Vyberte si termín a zaregistrujte sa nižšie.</p>
+  <p id="heroPromo" style="max-width:640px; margin:10px auto 0;"></p>
+  <div class="actions" style="justify-content:center; margin-top:16px;">
+    <button id="fbShareBtn" class="secondary">📘 Zdieľať na Facebooku</button>
+  </div>
 </section>
 
 <div class="container">
@@ -38,8 +42,11 @@
     <div id="termError" class="alert error" style="display:none;">Prosím vyberte termín workshopu.</div>
 
     <h2>2. Vaše údaje</h2>
-    <label for="fullName">Meno a priezvisko *</label>
-    <input type="text" id="fullName" required autocomplete="name" />
+    <label for="firstName">Meno *</label>
+    <input type="text" id="firstName" required autocomplete="given-name" />
+
+    <label for="lastName">Priezvisko *</label>
+    <input type="text" id="lastName" required autocomplete="family-name" />
 
     <label for="city">Mesto *</label>
     <input type="text" id="city" required autocomplete="address-level2" />
@@ -129,6 +136,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script type="module" src="js/booking.js"></script>
 </body>
 </html>

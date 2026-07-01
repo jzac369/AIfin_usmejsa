@@ -1,7 +1,8 @@
 import { firebaseConfig } from "./firebase-config.js";
+import { emailjsConfig, isEmailjsConfigured } from "./emailjs-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, doc, runTransaction, setDoc, serverTimestamp
+  getFirestore, collection, getDocs, doc, getDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { generateCode, formatDateTime, downloadICS, applyStoredTheme, toggleTheme } from "./util.js";
 
@@ -24,8 +25,38 @@ wireOtherToggle("reasonOther", "reasonOtherText");
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+if (isEmailjsConfigured() && window.emailjs) {
+  window.emailjs.init({ publicKey: emailjsConfig.publicKey });
+}
+
 let terms = [];
 let selectedTermId = null;
+
+const DEFAULT_HERO = {
+  title: "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach",
+  subtitle: "Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách. Vyberte si termín a zaregistrujte sa nižšie.",
+  promo: "Nenechajte sa prekvapiť podvodníkmi, ktorí dnes zneužívajú umelú inteligenciu. Naučte sa za 2 hodiny rozpoznať riziká a zároveň získajte praktické tipy, ako vám AI môže pomôcť lepšie sa rozhodovať o vašich financiách. Miesta sú obmedzené!"
+};
+
+async function loadHero() {
+  try {
+    const snap = await getDoc(doc(db, "settings", "landingPage"));
+    const data = snap.exists() ? snap.data() : {};
+    document.getElementById("heroTitle").textContent = data.title || DEFAULT_HERO.title;
+    document.getElementById("heroSubtitle").textContent = data.subtitle || DEFAULT_HERO.subtitle;
+    document.getElementById("heroPromo").textContent = data.promo || DEFAULT_HERO.promo;
+  } catch {
+    document.getElementById("heroTitle").textContent = DEFAULT_HERO.title;
+    document.getElementById("heroSubtitle").textContent = DEFAULT_HERO.subtitle;
+    document.getElementById("heroPromo").textContent = DEFAULT_HERO.promo;
+  }
+}
+
+document.getElementById("fbShareBtn").addEventListener("click", () => {
+  const url = encodeURIComponent(window.location.origin + window.location.pathname);
+  const quote = encodeURIComponent("Pozrite si bezplatný workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“ – naučte sa rozpoznať AI podvody a využívať AI rozumne pri financiách!");
+  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${quote}`, "_blank", "width=600,height=500");
+});
 
 async function loadTerms() {
   const snap = await getDocs(collection(db, "terms"));
@@ -52,16 +83,33 @@ function renderTerms() {
   terms.forEach((term) => {
     const booked = term.booked || 0;
     const capacity = term.capacity || 10;
+    const waitlistCap = term.waitlistCapacity || 0;
+    const waitlistCount = term.waitlistCount || 0;
     const pct = Math.min(100, Math.round((booked / capacity) * 100));
-    const full = booked >= capacity;
+    const mainFull = booked >= capacity;
+    const waitlistFull = waitlistCount >= waitlistCap;
+    const totallyFull = mainFull && (waitlistCap === 0 || waitlistFull);
+    const remaining = capacity - booked;
+
     const div = document.createElement("div");
-    div.className = "term-option" + (full ? " full" : "") + (selectedTermId === term.id ? " selected" : "");
+    div.className = "term-option" + (totallyFull ? " full" : "") + (selectedTermId === term.id ? " selected" : "");
+
+    let capacityLine = `Voľné miesta: ${remaining} / ${capacity}`;
+    let urgencyBadge = "";
+    if (mainFull && waitlistCap > 0 && !waitlistFull) {
+      capacityLine = `Plno – voľné miesta na čakacej listine: ${waitlistCap - waitlistCount} / ${waitlistCap}`;
+    } else if (totallyFull) {
+      capacityLine = "Obsadené";
+    } else if (remaining <= 2) {
+      urgencyBadge = `<span class="badge-pill pending" style="margin-left:6px;">Posledné ${remaining} ${remaining === 1 ? "miesto" : "miesta"}!</span>`;
+    }
+
     div.innerHTML = `
-      <h3>${formatDateTime(term.datetime)}</h3>
-      <div class="capacity">${full ? "Obsadené" : `Voľné miesta: ${capacity - booked} / ${capacity}`}</div>
+      <h3>${formatDateTime(term.datetime)} ${urgencyBadge}</h3>
+      <div class="capacity">${capacityLine}</div>
       <div class="capacity-bar ${pct >= 100 ? "full" : pct >= 70 ? "warn" : ""}"><div style="width:${pct}%"></div></div>
     `;
-    if (!full) {
+    if (!totallyFull) {
       div.addEventListener("click", () => {
         selectedTermId = term.id;
         renderTerms();
@@ -84,7 +132,8 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
     return;
   }
 
-  const fullName = document.getElementById("fullName").value.trim();
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
   const city = document.getElementById("city").value.trim();
   const email = document.getElementById("email").value.trim();
   const phone = document.getElementById("phone").value.trim();
@@ -105,12 +154,13 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
     reason = `Iné: ${document.getElementById("reasonOtherText").value.trim()}`;
   }
 
-  if (!fullName || !city || !email || !phone || !source || !aiExperience || !digitalSkill || !reason) {
+  if (!firstName || !lastName || !city || !email || !phone || !source || !aiExperience || !digitalSkill || !reason) {
     errBox.textContent = "Prosím vyplňte všetky povinné polia a dotazník.";
     errBox.style.display = "block";
     return;
   }
 
+  const fullName = `${firstName} ${lastName}`;
   const submitBtn = document.getElementById("submitBtn");
   submitBtn.disabled = true;
   submitBtn.textContent = "Odosielam…";
@@ -118,6 +168,7 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
   try {
     const termRef = doc(db, "terms", selectedTermId);
     let finalCode = null;
+    let finalStatus = "confirmed";
 
     await runTransaction(db, async (tx) => {
       const termSnap = await tx.get(termRef);
@@ -125,7 +176,17 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
       const data = termSnap.data();
       const booked = data.booked || 0;
       const capacity = data.capacity || 10;
-      if (booked >= capacity) throw new Error("Tento termín je už, žiaľ, plne obsadený. Vyberte iný.");
+      const waitlistCap = data.waitlistCapacity || 0;
+      const waitlistCount = data.waitlistCount || 0;
+
+      let status;
+      if (booked < capacity) {
+        status = "confirmed";
+      } else if (waitlistCount < waitlistCap) {
+        status = "waitlist";
+      } else {
+        throw new Error("Tento termín je už, žiaľ, plne obsadený (aj náhradná listina). Vyberte iný.");
+      }
 
       // vygeneruj unikátny kód (skús pár krát, ak by kolidoval)
       let code, codeRef, codeSnap;
@@ -138,11 +199,20 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
       }
       if (!code) throw new Error("Nepodarilo sa vygenerovať kód, skúste to prosím znova.");
 
-      tx.update(termRef, { booked: booked + 1 });
+      if (status === "confirmed") {
+        tx.update(termRef, { booked: booked + 1 });
+      } else {
+        tx.update(termRef, { waitlistCount: waitlistCount + 1 });
+      }
+
       tx.set(codeRef, {
         code,
+        firstName, lastName,
         fullName, city, email, phone,
         termId: selectedTermId,
+        status,
+        attended: false,
+        adminNotes: "",
         survey: { source, devices, aiExperience, digitalSkill, reason },
         entryQuizDone: false,
         exitQuizDone: false,
@@ -150,12 +220,15 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
         exitScore: null,
         entryAnswers: null,
         exitAnswers: null,
+        feedback: null,
         createdAt: Date.now()
       });
       finalCode = code;
+      finalStatus = status;
     });
 
-    showSuccess(finalCode);
+    sendConfirmationEmail({ firstName, lastName, email, code: finalCode, status: finalStatus }).catch(() => {});
+    showSuccess(finalCode, finalStatus);
   } catch (err) {
     errBox.textContent = err.message || "Nastala chyba pri registrácii. Skúste to prosím znova.";
     errBox.style.display = "block";
@@ -166,7 +239,38 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
   }
 });
 
-function showSuccess(code) {
+const DEFAULT_EMAIL_TEMPLATE = {
+  subject: "Potvrdenie registrácie – Workshop AI a financie",
+  body: "Dobrý deň {{meno}},\n\nďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.\n\nVáš termín: {{termin}}\nVáš prihlasovací kód (uschovajte si ho): {{kod}}\n\nTešíme sa na Vás!"
+};
+
+async function sendConfirmationEmail({ firstName, lastName, email, code, status }) {
+  if (!isEmailjsConfigured() || !window.emailjs) return;
+  const term = terms.find((t) => t.id === selectedTermId);
+  const templateSnap = await getDoc(doc(db, "settings", "emailTemplate"));
+  const tpl = templateSnap.exists() ? templateSnap.data() : DEFAULT_EMAIL_TEMPLATE;
+  const replacements = {
+    "{{meno}}": firstName,
+    "{{priezvisko}}": lastName,
+    "{{termin}}": term ? formatDateTime(term.datetime) : "",
+    "{{kod}}": code
+  };
+  const fill = (text) => Object.entries(replacements).reduce((acc, [k, v]) => acc.split(k).join(v), text || "");
+
+  let subject = fill(tpl.subject || DEFAULT_EMAIL_TEMPLATE.subject);
+  let body = fill(tpl.body || DEFAULT_EMAIL_TEMPLATE.body);
+  if (status === "waitlist") {
+    body += "\n\n(Momentálne ste zaradený/á na náhradnú listinu, budeme Vás kontaktovať, ak sa uvoľní miesto.)";
+  }
+
+  await window.emailjs.send(emailjsConfig.serviceId, emailjsConfig.templateId, {
+    to_email: email,
+    subject,
+    message: body
+  });
+}
+
+function showSuccess(code, status) {
   document.getElementById("regForm").style.display = "none";
   const successCard = document.getElementById("successCard");
   successCard.style.display = "block";
@@ -174,7 +278,7 @@ function showSuccess(code) {
 
   const term = terms.find((t) => t.id === selectedTermId);
   document.getElementById("successTermInfo").textContent = term
-    ? `Váš termín: ${formatDateTime(term.datetime)}`
+    ? `Váš termín: ${formatDateTime(term.datetime)}${status === "waitlist" ? " (náhradná listina)" : ""}`
     : "";
 
   new QRCode(document.getElementById("qrBox"), {
@@ -190,4 +294,5 @@ function showSuccess(code) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+loadHero();
 loadTerms();

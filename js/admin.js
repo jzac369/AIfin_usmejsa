@@ -4,9 +4,9 @@ import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, getDocs, doc, setDoc, getDoc
+  getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { formatDateTime, exportRegistrationsCSV, applyStoredTheme, toggleTheme } from "./util.js";
+import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, applyStoredTheme, toggleTheme } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 
 applyStoredTheme();
@@ -19,6 +19,24 @@ const db = getFirestore(app);
 const TERM_COUNT = 5;
 let terms = [];
 let registrations = [];
+
+function currentAdminEmail() {
+  return auth.currentUser?.email || "neznámy admin";
+}
+
+async function logAudit(action, code, details) {
+  try {
+    await addDoc(collection(db, "auditLog"), {
+      action,
+      code,
+      details,
+      adminEmail: currentAdminEmail(),
+      timestamp: Date.now()
+    });
+  } catch {
+    // logovanie nesmie zhodiť samotnú akciu
+  }
+}
 
 // ---------- AUTH ----------
 document.getElementById("loginBtn").addEventListener("click", async () => {
@@ -74,11 +92,53 @@ async function loadAll() {
   terms = termsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   registrations = regsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+  renderAlerts();
   renderTermsEditor();
   renderTermFilter();
   renderTable();
   renderStats();
+  renderResultsTable();
   await loadQuestionsIntoEditor();
+  await loadEmailTemplate();
+  await loadLandingContent();
+  await loadAuditLog();
+}
+
+// ---------- ALERTS ----------
+function renderAlerts() {
+  const panel = document.getElementById("alertsPanel");
+  const now = Date.now();
+  const alerts = [];
+
+  terms.forEach((t) => {
+    if (!t.datetime) return;
+    const when = new Date(t.datetime).getTime();
+    const daysAway = (when - now) / (1000 * 60 * 60 * 24);
+    const capacity = t.capacity || 10;
+    const booked = t.booked || 0;
+    const pctFull = booked / capacity;
+
+    if (daysAway > 0 && daysAway <= 5 && pctFull < 0.5) {
+      alerts.push({
+        urgent: true,
+        text: `⚠️ Termín ${formatDateTime(t.datetime)} sa blíži (o menej ako 5 dní) a je obsadený len na ${Math.round(pctFull * 100)} % (${booked}/${capacity}). Zvážte dodatočnú propagáciu.`
+      });
+    } else if (daysAway > 0 && capacity - booked <= 2 && capacity - booked > 0) {
+      alerts.push({
+        urgent: false,
+        text: `🔥 Termín ${formatDateTime(t.datetime)} je takmer plný – ostávajú posledné ${capacity - booked} miesta.`
+      });
+    }
+  });
+
+  const notDoneEntry = registrations.filter((r) => r.status !== "cancelled" && !r.entryQuizDone).length;
+  if (notDoneEntry > 0) {
+    alerts.push({ urgent: false, text: `📝 ${notDoneEntry} prihlásených účastníkov ešte nevyplnilo vstupný kvíz.` });
+  }
+
+  panel.innerHTML = alerts
+    .map((a) => `<div class="alert-box${a.urgent ? " urgent" : ""}">${a.text}</div>`)
+    .join("");
 }
 
 // ---------- TERMS EDITOR ----------
@@ -90,10 +150,15 @@ function renderTermsEditor() {
     const existing = terms.find((t) => t.id === id);
     const localValue = existing?.datetime ? toLocalInputValue(existing.datetime) : "";
     const wrap = document.createElement("div");
-    wrap.style.marginBottom = "12px";
+    wrap.style.marginBottom = "16px";
+    wrap.style.paddingBottom = "12px";
+    wrap.style.borderBottom = "1px solid var(--border)";
     wrap.innerHTML = `
       <label>Termín ${i + 1} (kapacita: 10 osôb${existing ? ", obsadené: " + (existing.booked || 0) : ""})</label>
       <input type="datetime-local" id="termInput${i}" value="${localValue}" />
+      <label>Počet miest na čakacej listine (náhradníci)</label>
+      <input type="number" min="0" id="waitlistInput${i}" value="${existing?.waitlistCapacity || 0}" style="max-width:140px;" />
+      ${existing ? `<p style="color:var(--muted); font-size:.8rem; margin-top:4px;">Na čakacej listine momentálne: ${existing.waitlistCount || 0}/${existing.waitlistCapacity || 0}</p>` : ""}
     `;
     editor.appendChild(wrap);
   }
@@ -111,12 +176,15 @@ document.getElementById("saveTermsBtn").addEventListener("click", async () => {
     const val = document.getElementById(`termInput${i}`).value;
     if (!val) continue;
     const existing = terms.find((t) => t.id === id);
+    const waitlistCapacity = parseInt(document.getElementById(`waitlistInput${i}`).value, 10) || 0;
     await setDoc(
       doc(db, "terms", id),
       {
         datetime: new Date(val).toISOString(),
         capacity: 10,
         booked: existing?.booked || 0,
+        waitlistCapacity,
+        waitlistCount: existing?.waitlistCount || 0,
         order: i
       },
       { merge: true }
@@ -130,6 +198,7 @@ document.getElementById("saveTermsBtn").addEventListener("click", async () => {
 // ---------- REGISTRATIONS TABLE ----------
 function renderTermFilter() {
   const sel = document.getElementById("termFilter");
+  const prev = sel.value;
   sel.innerHTML = '<option value="">Všetky termíny</option>';
   terms.forEach((t) => {
     const opt = document.createElement("option");
@@ -137,6 +206,14 @@ function renderTermFilter() {
     opt.textContent = formatDateTime(t.datetime);
     sel.appendChild(opt);
   });
+  sel.value = prev;
+}
+
+function rowClass(r) {
+  if (r.status === "waitlist") return "row-waitlist";
+  if (r.entryQuizDone && r.exitQuizDone) return "row-done";
+  if (r.entryQuizDone) return "row-partial";
+  return "";
 }
 
 function renderTable() {
@@ -152,7 +229,6 @@ function renderTable() {
       return [r.fullName, r.city, r.email, r.code].some((v) => (v || "").toLowerCase().includes(search));
     });
 
-  // Zoskup účastníkov podľa termínu (dátumu), zoradené chronologicky.
   const groups = {};
   filtered.forEach((r) => {
     const key = r.termId || "bez-terminu";
@@ -180,25 +256,34 @@ function renderTable() {
     const groupWrap = document.createElement("div");
     groupWrap.style.marginBottom = "28px";
     groupWrap.innerHTML = `
-      <h3 style="margin-bottom:8px; padding-bottom:8px; border-bottom:2px solid var(--primary);">
-        📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
-        <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${rows.length} ${rows.length === 1 ? "účastník" : rows.length < 5 ? "účastníci" : "účastníkov"})</span>
-      </h3>
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding-bottom:8px; border-bottom:2px solid var(--primary);">
+        <h3 style="margin:0;">
+          📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
+          <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${rows.length} ${rows.length === 1 ? "účastník" : rows.length < 5 ? "účastníci" : "účastníkov"})</span>
+        </h3>
+        <button class="secondary print-attendance-btn" type="button">🖨️ Prezenčná listina</button>
+      </div>
       <table>
         <thead>
           <tr>
             <th>Kód</th><th>Meno</th><th>Mesto</th><th>Email</th><th>Telefón</th>
             <th>Zdroj</th><th>Zariadenia</th><th>Skúsenosti AI</th><th>Dôvod</th>
-            <th>Vstup.</th><th>Výst.</th><th></th>
+            <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Prišiel</th><th>Poznámka (len admin)</th><th>Akcie</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     `;
 
+    groupWrap.querySelector(".print-attendance-btn").addEventListener("click", () => {
+      printAttendanceSheet(term, rows);
+    });
+
     const tbody = groupWrap.querySelector("tbody");
     rows.forEach((r) => {
       const tr = document.createElement("tr");
+      tr.className = rowClass(r);
+      const statusLabel = r.status === "cancelled" ? "zrušená" : r.status === "waitlist" ? "náhradník" : "potvrdená";
       tr.innerHTML = `
         <td><strong>${r.code}</strong></td>
         <td>${r.fullName}</td>
@@ -211,8 +296,39 @@ function renderTable() {
         <td>${r.survey?.reason ?? ""}</td>
         <td>${r.entryScore != null ? r.entryScore + "/8" : "–"}</td>
         <td>${r.exitScore != null ? r.exitScore + "/8" : "–"}</td>
-        <td><span class="badge-pill ${r.entryQuizDone && r.exitQuizDone ? "ok" : "pending"}">${r.entryQuizDone && r.exitQuizDone ? "dokončené" : "prebieha"}</span></td>
+        <td><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span></td>
+        <td><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
+        <td><textarea class="admin-notes" placeholder="Interná poznámka...">${r.adminNotes || ""}</textarea></td>
+        <td class="row-actions">
+          <button type="button" class="secondary edit-btn">✏️ Upraviť</button>
+          <button type="button" class="secondary transfer-btn">🔁 Presunúť</button>
+          <button type="button" class="secondary cancel-btn">🚫 Zrušiť</button>
+          <button type="button" class="danger delete-btn">🗑️ Vymazať</button>
+        </td>
       `;
+
+      tr.querySelector(".attended-check").addEventListener("change", async (e) => {
+        await updateDoc(doc(db, "registrations", r.code), { attended: e.target.checked });
+        r.attended = e.target.checked;
+        await logAudit("attendance", r.code, { attended: e.target.checked });
+      });
+
+      let notesTimer;
+      tr.querySelector(".admin-notes").addEventListener("input", (e) => {
+        clearTimeout(notesTimer);
+        const value = e.target.value;
+        notesTimer = setTimeout(async () => {
+          await updateDoc(doc(db, "registrations", r.code), { adminNotes: value });
+          r.adminNotes = value;
+          await logAudit("notes", r.code, { adminNotes: value });
+        }, 600);
+      });
+
+      tr.querySelector(".edit-btn").addEventListener("click", () => openEditPanel(tr, r));
+      tr.querySelector(".transfer-btn").addEventListener("click", () => transferRegistration(r));
+      tr.querySelector(".cancel-btn").addEventListener("click", () => cancelRegistration(r));
+      tr.querySelector(".delete-btn").addEventListener("click", () => deleteRegistration(r));
+
       tbody.appendChild(tr);
     });
 
@@ -220,12 +336,255 @@ function renderTable() {
   });
 }
 
+function openEditPanel(tr, r) {
+  const existing = tr.nextElementSibling;
+  if (existing && existing.classList.contains("edit-panel-row")) {
+    existing.remove();
+    return;
+  }
+  const panelRow = document.createElement("tr");
+  panelRow.className = "edit-panel-row";
+  const td = document.createElement("td");
+  td.colSpan = 15;
+  td.innerHTML = `
+    <div class="card" style="margin:8px 0;">
+      <label>Meno</label>
+      <input type="text" id="edit-firstName" value="${r.firstName || ""}" />
+      <label>Priezvisko</label>
+      <input type="text" id="edit-lastName" value="${r.lastName || ""}" />
+      <label>Mesto</label>
+      <input type="text" id="edit-city" value="${r.city || ""}" />
+      <label>Email</label>
+      <input type="email" id="edit-email" value="${r.email || ""}" />
+      <label>Telefón</label>
+      <input type="text" id="edit-phone" value="${r.phone || ""}" />
+      <div class="actions">
+        <button type="button" id="edit-save-btn">💾 Uložiť zmeny</button>
+        <button type="button" class="secondary" id="edit-cancel-btn">Zrušiť úpravu</button>
+      </div>
+    </div>
+  `;
+  panelRow.appendChild(td);
+  tr.after(panelRow);
+
+  panelRow.querySelector("#edit-cancel-btn").addEventListener("click", () => panelRow.remove());
+  panelRow.querySelector("#edit-save-btn").addEventListener("click", async () => {
+    const updated = {
+      firstName: panelRow.querySelector("#edit-firstName").value.trim(),
+      lastName: panelRow.querySelector("#edit-lastName").value.trim(),
+      city: panelRow.querySelector("#edit-city").value.trim(),
+      email: panelRow.querySelector("#edit-email").value.trim(),
+      phone: panelRow.querySelector("#edit-phone").value.trim()
+    };
+    updated.fullName = `${updated.firstName} ${updated.lastName}`.trim();
+
+    const diff = {};
+    Object.keys(updated).forEach((k) => {
+      if (updated[k] !== r[k]) diff[k] = { from: r[k], to: updated[k] };
+    });
+
+    await updateDoc(doc(db, "registrations", r.code), updated);
+    Object.assign(r, updated);
+    await logAudit("edit", r.code, diff);
+    panelRow.remove();
+    renderTable();
+  });
+}
+
+async function cancelRegistration(r) {
+  if (r.status === "cancelled") return;
+  if (!confirm(`Naozaj chcete zrušiť registráciu účastníka ${r.fullName} (${r.code})?`)) return;
+
+  await runTransaction(db, async (tx) => {
+    const termRef = doc(db, "terms", r.termId);
+    const termSnap = await tx.get(termRef);
+    const regRef = doc(db, "registrations", r.code);
+
+    if (termSnap.exists()) {
+      const data = termSnap.data();
+      if (r.status === "waitlist") {
+        tx.update(termRef, { waitlistCount: Math.max(0, (data.waitlistCount || 0) - 1) });
+      } else {
+        tx.update(termRef, { booked: Math.max(0, (data.booked || 0) - 1) });
+      }
+    }
+    tx.update(regRef, { status: "cancelled" });
+  });
+
+  r.status = "cancelled";
+  await logAudit("cancel", r.code, {});
+  await promoteFromWaitlistIfPossible(r.termId);
+  await loadAll();
+}
+
+async function promoteFromWaitlistIfPossible(termId) {
+  const term = terms.find((t) => t.id === termId);
+  if (!term) return;
+  if ((term.booked || 0) >= (term.capacity || 10)) return;
+  const waitlisted = registrations
+    .filter((r) => r.termId === termId && r.status === "waitlist")
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  if (waitlisted.length === 0) return;
+  const promote = waitlisted[0];
+
+  await runTransaction(db, async (tx) => {
+    const termRef = doc(db, "terms", termId);
+    const termSnap = await tx.get(termRef);
+    const data = termSnap.data();
+    tx.update(termRef, {
+      booked: (data.booked || 0) + 1,
+      waitlistCount: Math.max(0, (data.waitlistCount || 0) - 1)
+    });
+    tx.update(doc(db, "registrations", promote.code), { status: "confirmed" });
+  });
+  await logAudit("waitlist-promoted", promote.code, { termId });
+}
+
+async function transferRegistration(r) {
+  const options = terms.filter((t) => t.id !== r.termId);
+  if (options.length === 0) {
+    alert("Nie sú dostupné žiadne iné termíny.");
+    return;
+  }
+  const list = options.map((t, i) => `${i + 1}) ${formatDateTime(t.datetime)} (voľné: ${(t.capacity || 10) - (t.booked || 0)})`).join("\n");
+  const choice = prompt(`Na ktorý termín chcete účastníka ${r.fullName} presunúť?\n\n${list}\n\nZadajte číslo:`);
+  const idx = parseInt(choice, 10) - 1;
+  if (isNaN(idx) || !options[idx]) return;
+  const newTerm = options[idx];
+
+  await runTransaction(db, async (tx) => {
+    const oldTermRef = doc(db, "terms", r.termId);
+    const newTermRef = doc(db, "terms", newTerm.id);
+    const oldSnap = await tx.get(oldTermRef);
+    const newSnap = await tx.get(newTermRef);
+    const oldData = oldSnap.exists() ? oldSnap.data() : {};
+    const newData = newSnap.exists() ? newSnap.data() : {};
+
+    if (oldSnap.exists()) {
+      if (r.status === "waitlist") {
+        tx.update(oldTermRef, { waitlistCount: Math.max(0, (oldData.waitlistCount || 0) - 1) });
+      } else {
+        tx.update(oldTermRef, { booked: Math.max(0, (oldData.booked || 0) - 1) });
+      }
+    }
+
+    const newBooked = newData.booked || 0;
+    const newCapacity = newData.capacity || 10;
+    let newStatus;
+    if (newBooked < newCapacity) {
+      newStatus = "confirmed";
+      tx.update(newTermRef, { booked: newBooked + 1 });
+    } else {
+      newStatus = "waitlist";
+      tx.update(newTermRef, { waitlistCount: (newData.waitlistCount || 0) + 1 });
+    }
+
+    tx.update(doc(db, "registrations", r.code), { termId: newTerm.id, status: newStatus });
+  });
+
+  await logAudit("transfer", r.code, { from: r.termId, to: newTerm.id });
+  await promoteFromWaitlistIfPossible(r.termId);
+  await loadAll();
+}
+
+async function deleteRegistration(r) {
+  if (!confirm(`Naozaj chcete NATRVALO vymazať registráciu ${r.fullName} (${r.code})? Táto akcia sa nedá vrátiť späť.`)) return;
+
+  await runTransaction(db, async (tx) => {
+    const termRef = doc(db, "terms", r.termId);
+    const termSnap = await tx.get(termRef);
+    if (termSnap.exists() && r.status !== "cancelled") {
+      const data = termSnap.data();
+      if (r.status === "waitlist") {
+        tx.update(termRef, { waitlistCount: Math.max(0, (data.waitlistCount || 0) - 1) });
+      } else {
+        tx.update(termRef, { booked: Math.max(0, (data.booked || 0) - 1) });
+      }
+    }
+    tx.delete(doc(db, "registrations", r.code));
+  });
+
+  await logAudit("delete", r.code, { snapshot: { fullName: r.fullName, email: r.email, termId: r.termId } });
+  await promoteFromWaitlistIfPossible(r.termId);
+  await loadAll();
+}
+
+function printAttendanceSheet(term, rows) {
+  const w = window.open("", "_blank");
+  const title = term ? formatDateTime(term.datetime) : "Workshop";
+  w.document.write(`
+    <html><head><title>Prezenčná listina – ${title}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 24px; }
+      h1 { font-size: 18px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+      th, td { border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px; }
+      th { background: #eee; }
+    </style>
+    </head><body>
+    <h1>Prezenčná listina – Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“</h1>
+    <p>Termín: ${title}</p>
+    <table>
+      <thead><tr><th>#</th><th>Meno a priezvisko</th><th>Mesto</th><th>Kód</th><th>Podpis</th></tr></thead>
+      <tbody>
+        ${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${r.fullName}</td><td>${r.city}</td><td>${r.code}</td><td></td></tr>`).join("")}
+      </tbody>
+    </table>
+    </body></html>
+  `);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
 document.getElementById("searchInput").addEventListener("input", renderTable);
 document.getElementById("termFilter").addEventListener("change", renderTable);
 document.getElementById("exportCsvBtn").addEventListener("click", () => exportRegistrationsCSV(registrations, terms));
 
+// ---------- RESULTS TAB ----------
+function renderResultsTable() {
+  const container = document.getElementById("resultsTableContainer");
+  const rows = registrations.filter((r) => r.entryScore != null || r.exitScore != null);
+
+  if (rows.length === 0) {
+    container.innerHTML = "<p style='color:var(--muted)'>Zatiaľ žiadne vyplnené kvízy.</p>";
+    return;
+  }
+
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead><tr><th>Kód</th><th>Meno</th><th>Vstupný kvíz</th><th>Výstupný kvíz</th><th>Zmena</th></tr></thead>
+    <tbody></tbody>
+  `;
+  const tbody = table.querySelector("tbody");
+  rows.forEach((r) => {
+    const entry = r.entryScore != null ? r.entryScore : null;
+    const exit = r.exitScore != null ? r.exitScore : null;
+    let diffText = "–";
+    let diffColor = "";
+    if (entry != null && exit != null) {
+      const diff = exit - entry;
+      diffColor = diff > 0 ? "#106c53" : diff < 0 ? "#9c1c1f" : "#93650a";
+      diffText = diff > 0 ? `+${diff}` : `${diff}`;
+    }
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><strong>${r.code}</strong></td>
+      <td>${r.fullName}</td>
+      <td>${entry != null ? entry + "/8" : "–"}</td>
+      <td>${exit != null ? exit + "/8" : "–"}</td>
+      <td style="font-weight:700; color:${diffColor || "inherit"};">${diffText}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  container.innerHTML = "";
+  container.appendChild(table);
+}
+
+document.getElementById("exportResultsCsvBtn").addEventListener("click", () => exportResultsCSV(registrations));
+
 // ---------- STATS ----------
-let scoreChartInstance, capacityChartInstance, aiExpChartInstance, sourceChartInstance;
+let scoreChartInstance, capacityChartInstance, aiExpChartInstance, sourceChartInstance, digitalSkillChartInstance, reasonChartInstance;
 
 function renderStats() {
   const total = registrations.length;
@@ -281,24 +640,39 @@ function renderStats() {
     return map;
   };
 
+  const pieOptions = { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 9 } } } } };
+  const pieColors = ["#3d5afe", "#00c2a8", "#f5a623", "#e5484d", "#8b9dff", "#6be7c4"];
+
   const aiExpMap = countBy("aiExperience");
   aiExpChartInstance?.destroy();
   aiExpChartInstance = new Chart(document.getElementById("aiExpChart"), {
     type: "pie",
-    data: {
-      labels: Object.keys(aiExpMap),
-      datasets: [{ data: Object.values(aiExpMap), backgroundColor: ["#3d5afe", "#00c2a8", "#f5a623", "#e5484d"] }]
-    }
+    data: { labels: Object.keys(aiExpMap), datasets: [{ data: Object.values(aiExpMap), backgroundColor: pieColors }] },
+    options: pieOptions
   });
 
   const sourceMap = countBy("source");
   sourceChartInstance?.destroy();
   sourceChartInstance = new Chart(document.getElementById("sourceChart"), {
     type: "pie",
-    data: {
-      labels: Object.keys(sourceMap),
-      datasets: [{ data: Object.values(sourceMap), backgroundColor: ["#3d5afe", "#00c2a8", "#f5a623", "#e5484d", "#8b9dff", "#6be7c4"] }]
-    }
+    data: { labels: Object.keys(sourceMap), datasets: [{ data: Object.values(sourceMap), backgroundColor: pieColors }] },
+    options: pieOptions
+  });
+
+  const digitalSkillMap = countBy("digitalSkill");
+  digitalSkillChartInstance?.destroy();
+  digitalSkillChartInstance = new Chart(document.getElementById("digitalSkillChart"), {
+    type: "pie",
+    data: { labels: Object.keys(digitalSkillMap), datasets: [{ data: Object.values(digitalSkillMap), backgroundColor: pieColors }] },
+    options: pieOptions
+  });
+
+  const reasonMap = countBy("reason");
+  reasonChartInstance?.destroy();
+  reasonChartInstance = new Chart(document.getElementById("reasonChart"), {
+    type: "pie",
+    data: { labels: Object.keys(reasonMap), datasets: [{ data: Object.values(reasonMap), backgroundColor: pieColors }] },
+    options: pieOptions
   });
 }
 
@@ -387,3 +761,74 @@ document.getElementById("saveQuestionsBtn").addEventListener("click", async () =
   document.getElementById("questionsSaveMsg").style.display = "block";
   setTimeout(() => (document.getElementById("questionsSaveMsg").style.display = "none"), 3000);
 });
+
+// ---------- EMAIL TEMPLATE ----------
+const DEFAULT_EMAIL_TEMPLATE = {
+  subject: "Potvrdenie registrácie – Workshop AI a financie",
+  body: "Dobrý deň {{meno}},\n\nďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.\n\nVáš termín: {{termin}}\nVáš prihlasovací kód (uschovajte si ho): {{kod}}\n\nTešíme sa na Vás!"
+};
+
+async function loadEmailTemplate() {
+  const snap = await getDoc(doc(db, "settings", "emailTemplate"));
+  const data = snap.exists() ? snap.data() : DEFAULT_EMAIL_TEMPLATE;
+  document.getElementById("emailSubjectInput").value = data.subject || DEFAULT_EMAIL_TEMPLATE.subject;
+  document.getElementById("emailBodyInput").value = data.body || DEFAULT_EMAIL_TEMPLATE.body;
+}
+
+document.getElementById("saveEmailBtn").addEventListener("click", async () => {
+  await setDoc(doc(db, "settings", "emailTemplate"), {
+    subject: document.getElementById("emailSubjectInput").value,
+    body: document.getElementById("emailBodyInput").value
+  });
+  document.getElementById("emailSaveMsg").style.display = "block";
+  setTimeout(() => (document.getElementById("emailSaveMsg").style.display = "none"), 3000);
+});
+
+// ---------- LANDING PAGE CONTENT ----------
+async function loadLandingContent() {
+  const snap = await getDoc(doc(db, "settings", "landingPage"));
+  const data = snap.exists() ? snap.data() : {};
+  document.getElementById("heroTitleInput").value = data.title || "";
+  document.getElementById("heroSubtitleInput").value = data.subtitle || "";
+  document.getElementById("heroPromoInput").value = data.promo || "";
+}
+
+document.getElementById("saveLandingBtn").addEventListener("click", async () => {
+  await setDoc(doc(db, "settings", "landingPage"), {
+    title: document.getElementById("heroTitleInput").value,
+    subtitle: document.getElementById("heroSubtitleInput").value,
+    promo: document.getElementById("heroPromoInput").value
+  });
+  document.getElementById("landingSaveMsg").style.display = "block";
+  setTimeout(() => (document.getElementById("landingSaveMsg").style.display = "none"), 3000);
+});
+
+// ---------- AUDIT LOG ----------
+async function loadAuditLog() {
+  const snap = await getDocs(collection(db, "auditLog"));
+  const entries = snap.docs.map((d) => d.data()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  const container = document.getElementById("auditLogContainer");
+
+  if (entries.length === 0) {
+    container.innerHTML = "<p style='color:var(--muted)'>Zatiaľ žiadne zaznamenané zmeny.</p>";
+    return;
+  }
+
+  const table = document.createElement("table");
+  table.innerHTML = `
+    <thead><tr><th>Kedy</th><th>Admin</th><th>Akcia</th><th>Kód účastníka</th><th>Detail</th></tr></thead>
+    <tbody>
+      ${entries.slice(0, 300).map((e) => `
+        <tr>
+          <td>${e.timestamp ? new Date(e.timestamp).toLocaleString("sk-SK") : ""}</td>
+          <td>${e.adminEmail || ""}</td>
+          <td>${e.action || ""}</td>
+          <td>${e.code || ""}</td>
+          <td><code style="font-size:.75rem;">${JSON.stringify(e.details || {})}</code></td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+  container.innerHTML = "";
+  container.appendChild(table);
+}

@@ -38,6 +38,23 @@
     <h2 id="welcomeTitle"></h2>
     <div id="statusBadges"></div>
     <div class="actions" id="welcomeActions" style="margin-top:18px;"></div>
+    <div id="manageBox" style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);"></div>
+  </div>
+
+  <div class="card" id="feedbackCard" style="display:none;">
+    <h2>💬 Spätná väzba na workshop</h2>
+    <p style="color:var(--muted)">Ďakujeme, že ste sa zúčastnili! Vaša spätná väzba nám pomôže workshop zlepšiť.</p>
+    <label>Ako by ste ohodnotili workshop? (1 = najhoršie, 5 = najlepšie)</label>
+    <div id="starRating" style="font-size:2rem; letter-spacing:.2em; cursor:pointer;"></div>
+    <label for="feedbackNps">Odporučili by ste tento workshop priateľovi/rodine? (0 = vôbec, 10 = určite áno)</label>
+    <input type="number" id="feedbackNps" min="0" max="10" style="max-width:100px;" />
+    <label for="feedbackComment">Komentár (nepovinné)</label>
+    <textarea id="feedbackComment" rows="4"></textarea>
+    <div id="feedbackMsg" class="alert success" style="display:none;">Ďakujeme za spätnú väzbu!</div>
+    <div class="actions">
+      <button id="submitFeedbackBtn">Odoslať spätnú väzbu</button>
+      <button id="feedbackBackBtn" class="secondary">← Späť</button>
+    </div>
   </div>
 
   <div class="card" id="quizCard" style="display:none;">

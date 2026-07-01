@@ -85,6 +85,31 @@ export function exportRegistrationsCSV(registrations, terms) {
   URL.revokeObjectURL(a.href);
 }
 
+function downloadCSV(filename, header, rows) {
+  const csv = [header, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+    .join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+export function exportResultsCSV(registrations) {
+  const header = ["Kód", "Meno a priezvisko", "Vstupný kvíz (z 8)", "Výstupný kvíz (z 8)", "Zmena"];
+  const rows = registrations
+    .filter((r) => r.entryScore != null || r.exitScore != null)
+    .map((r) => {
+      const entry = r.entryScore != null ? r.entryScore : "";
+      const exit = r.exitScore != null ? r.exitScore : "";
+      const diff = r.entryScore != null && r.exitScore != null ? r.exitScore - r.entryScore : "";
+      return [r.code, r.fullName, entry, exit, diff];
+    });
+  downloadCSV("vysledky_kvizov.csv", header, rows);
+}
+
 export function applyStoredTheme() {
   const theme = localStorage.getItem("theme") || "light";
   document.documentElement.setAttribute("data-theme", theme);

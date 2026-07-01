@@ -38,17 +38,23 @@
 
   <div id="dashboard" style="display:none;">
 
+    <div id="alertsPanel"></div>
+
     <div class="tabs" id="mainTabs">
       <button class="active" data-tab="terms">📅 Termíny</button>
       <button data-tab="registrations">👥 Prihlásení</button>
       <button data-tab="questions">❓ Otázky</button>
+      <button data-tab="results">🧾 Výsledky</button>
+      <button data-tab="email">✉️ Email</button>
+      <button data-tab="landing">🌐 Landing page</button>
+      <button data-tab="log">📜 Log</button>
       <button data-tab="stats">📊 Štatistiky</button>
     </div>
 
     <div id="tab-terms" class="tab-panel">
       <div class="card">
         <h2>Nastavenie termínov workshopu</h2>
-        <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb.</p>
+        <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb, počet náhradníkov (čakacia listina) si vieš zvoliť pre každý termín samostatne.</p>
         <div id="termsEditor"></div>
         <div class="actions">
           <button id="saveTermsBtn">💾 Uložiť termíny</button>
@@ -65,7 +71,63 @@
           <select id="termFilter"><option value="">Všetky termíny</option></select>
           <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
         </div>
+        <p style="color:var(--muted); font-size:.82rem;">
+          <span class="badge-pill" style="background:#dcf7ec;color:#106c53;">zelená</span> = oba kvízy hotové ·
+          <span class="badge-pill" style="background:#fff3d6;color:#93650a;">žltá</span> = len vstupný kvíz ·
+          <span class="badge-pill" style="background:#e0e6f5;color:#3d4a6b;">modrá</span> = náhradník (waitlist)
+        </p>
         <div class="table-wrap" id="regGroupsContainer"></div>
+      </div>
+    </div>
+
+    <div id="tab-results" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Výsledky kvízov podľa účastníka</h2>
+        <p style="color:var(--muted)">Prehľad vstupného a výstupného skóre pre každý prihlasovací kód, farebne odlíšené podľa zlepšenia.</p>
+        <div class="actions">
+          <button id="exportResultsCsvBtn" class="secondary">⬇️ Export výsledkov CSV</button>
+        </div>
+        <div class="table-wrap" id="resultsTableContainer" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <div id="tab-email" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Text potvrdzovacieho emailu</h2>
+        <p style="color:var(--muted)">Odosielanie beží cez bezplatnú službu EmailJS (nastavenie v <code>js/emailjs-config.js</code>, návod v README). Dostupné premenné: <code>{{meno}}</code>, <code>{{priezvisko}}</code>, <code>{{termin}}</code>, <code>{{kod}}</code>.</p>
+        <label for="emailSubjectInput">Predmet emailu</label>
+        <input type="text" id="emailSubjectInput" />
+        <label for="emailBodyInput">Text emailu</label>
+        <textarea id="emailBodyInput" rows="10"></textarea>
+        <div class="actions">
+          <button id="saveEmailBtn">💾 Uložiť text emailu</button>
+        </div>
+        <div id="emailSaveMsg" class="alert success" style="display:none;">Text emailu bol uložený.</div>
+      </div>
+    </div>
+
+    <div id="tab-landing" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Obsah úvodnej stránky</h2>
+        <p style="color:var(--muted)">Tento text sa zobrazuje na hlavnej registračnej stránke a má za cieľ prilákať ľudí na workshop.</p>
+        <label for="heroTitleInput">Hlavný nadpis</label>
+        <input type="text" id="heroTitleInput" />
+        <label for="heroSubtitleInput">Podnadpis</label>
+        <textarea id="heroSubtitleInput" rows="3"></textarea>
+        <label for="heroPromoInput">Propagačný text (voliteľné, zvýrazňuje naliehavosť/benefity)</label>
+        <textarea id="heroPromoInput" rows="4"></textarea>
+        <div class="actions">
+          <button id="saveLandingBtn">💾 Uložiť obsah stránky</button>
+        </div>
+        <div id="landingSaveMsg" class="alert success" style="display:none;">Obsah bol uložený.</div>
+      </div>
+    </div>
+
+    <div id="tab-log" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Interný log zmien</h2>
+        <p style="color:var(--muted)">Záznam všetkých úprav a vymazaní registrácií vrátane emailu admina, ktorý zmenu vykonal.</p>
+        <div class="table-wrap" id="auditLogContainer"></div>
       </div>
     </div>
 
@@ -99,12 +161,25 @@
         <canvas id="capacityChart" height="120"></canvas>
       </div>
       <div class="card">
-        <h3>Skúsenosti účastníkov s AI</h3>
-        <canvas id="aiExpChart" height="120"></canvas>
-      </div>
-      <div class="card">
-        <h3>Odkiaľ sa účastníci dozvedeli o workshope</h3>
-        <canvas id="sourceChart" height="120"></canvas>
+        <h3>Otázky dotazníka</h3>
+        <div class="pie-grid">
+          <div class="pie-box">
+            <h4>Skúsenosti s AI</h4>
+            <canvas id="aiExpChart" width="180" height="180"></canvas>
+          </div>
+          <div class="pie-box">
+            <h4>Odkiaľ sa dozvedeli o workshope</h4>
+            <canvas id="sourceChart" width="180" height="180"></canvas>
+          </div>
+          <div class="pie-box">
+            <h4>Digitálne zručnosti</h4>
+            <canvas id="digitalSkillChart" width="180" height="180"></canvas>
+          </div>
+          <div class="pie-box">
+            <h4>Dôvod účasti</h4>
+            <canvas id="reasonChart" width="180" height="180"></canvas>
+          </div>
+        </div>
       </div>
     </div>
 

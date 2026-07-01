@@ -1,8 +1,10 @@
 import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getFirestore, doc, getDoc, updateDoc, collection, getDocs, runTransaction
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
-import { applyStoredTheme, toggleTheme } from "./util.js";
+import { applyStoredTheme, toggleTheme, formatDateTime } from "./util.js";
 
 applyStoredTheme();
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
@@ -69,7 +71,10 @@ function showWelcome() {
   document.getElementById("welcomeTitle").textContent = `Vitajte, ${registration.fullName.split(" ")[0]}!`;
 
   const badges = document.getElementById("statusBadges");
+  const statusLabel = registration.status === "cancelled" ? "zrušená" : registration.status === "waitlist" ? "náhradník" : "potvrdená";
   badges.innerHTML = `
+    <span class="badge-pill ${registration.status === "cancelled" ? "pending" : "ok"}">Registrácia: ${statusLabel}</span>
+    &nbsp;
     <span class="badge-pill ${registration.entryQuizDone ? "ok" : "pending"}">Vstupný kvíz: ${registration.entryQuizDone ? "hotový" : "čaká"}</span>
     &nbsp;
     <span class="badge-pill ${registration.exitQuizDone ? "ok" : "pending"}">Výstupný kvíz: ${registration.exitQuizDone ? "hotový" : "čaká"}</span>
@@ -78,16 +83,166 @@ function showWelcome() {
   const actions = document.getElementById("welcomeActions");
   actions.innerHTML = "";
 
-  if (!registration.entryQuizDone) {
-    const b = button("Spustiť vstupný kvíz", () => startQuiz("entry"));
-    actions.appendChild(b);
-  } else if (!registration.exitQuizDone) {
-    const b = button("Spustiť výstupný kvíz", () => startQuiz("exit"));
-    actions.appendChild(b);
-  } else {
-    const b = button("Zobraziť môj výsledok a certifikát", showFinalResult);
-    actions.appendChild(b);
+  if (registration.status !== "cancelled") {
+    if (!registration.entryQuizDone) {
+      const b = button("Spustiť vstupný kvíz", () => startQuiz("entry"));
+      actions.appendChild(b);
+    } else if (!registration.exitQuizDone) {
+      const b = button("Spustiť výstupný kvíz", () => startQuiz("exit"));
+      actions.appendChild(b);
+    } else {
+      const b = button("Zobraziť môj výsledok a certifikát", showFinalResult);
+      actions.appendChild(b);
+    }
   }
+
+  actions.appendChild(button("Zanechať spätnú väzbu 💬", showFeedbackForm, "secondary"));
+
+  renderManageBox();
+}
+
+function renderManageBox() {
+  const box = document.getElementById("manageBox");
+  box.innerHTML = "";
+  if (registration.status === "cancelled") {
+    box.innerHTML = `<p style="color:var(--muted)">Táto registrácia je zrušená. Ak sa chcete znova prihlásiť, vyplňte prosím nový registračný formulár.</p>`;
+    return;
+  }
+  const transferBtn = button("🔁 Zmeniť termín", showTransferOptions, "secondary");
+  const cancelBtn = button("🚫 Zrušiť registráciu", cancelMyRegistration, "danger");
+  box.appendChild(transferBtn);
+  box.appendChild(cancelBtn);
+  box.appendChild(document.createElement("div")).id = "transferOptionsBox";
+}
+
+async function showTransferOptions() {
+  const container = document.getElementById("transferOptionsBox");
+  container.innerHTML = "<p style='color:var(--muted)'>Načítavam dostupné termíny…</p>";
+  const snap = await getDocs(collection(db, "terms"));
+  const allTerms = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((t) => t.id !== registration.termId)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  if (allTerms.length === 0) {
+    container.innerHTML = "<p style='color:var(--muted)'>Nie sú dostupné žiadne iné termíny.</p>";
+    return;
+  }
+
+  container.innerHTML = "<label>Vyberte nový termín</label>";
+  const select = document.createElement("select");
+  allTerms.forEach((t) => {
+    const remaining = (t.capacity || 10) - (t.booked || 0);
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = `${formatDateTime(t.datetime)} (${remaining > 0 ? `voľné: ${remaining}` : "plno, náhradná listina"})`;
+    select.appendChild(opt);
+  });
+  container.appendChild(select);
+
+  const confirmBtn = button("Potvrdiť presun", async () => {
+    await transferMyRegistration(select.value);
+  });
+  confirmBtn.style.marginTop = "10px";
+  container.appendChild(document.createElement("br"));
+  container.appendChild(confirmBtn);
+}
+
+async function transferMyRegistration(newTermId) {
+  await runTransaction(db, async (tx) => {
+    const oldTermRef = doc(db, "terms", registration.termId);
+    const newTermRef = doc(db, "terms", newTermId);
+    const oldSnap = await tx.get(oldTermRef);
+    const newSnap = await tx.get(newTermRef);
+    const oldData = oldSnap.exists() ? oldSnap.data() : {};
+    const newData = newSnap.exists() ? newSnap.data() : {};
+
+    if (oldSnap.exists()) {
+      if (registration.status === "waitlist") {
+        tx.update(oldTermRef, { waitlistCount: Math.max(0, (oldData.waitlistCount || 0) - 1) });
+      } else {
+        tx.update(oldTermRef, { booked: Math.max(0, (oldData.booked || 0) - 1) });
+      }
+    }
+
+    const newBooked = newData.booked || 0;
+    const newCapacity = newData.capacity || 10;
+    let newStatus;
+    if (newBooked < newCapacity) {
+      newStatus = "confirmed";
+      tx.update(newTermRef, { booked: newBooked + 1 });
+    } else {
+      newStatus = "waitlist";
+      tx.update(newTermRef, { waitlistCount: (newData.waitlistCount || 0) + 1 });
+    }
+
+    tx.update(doc(db, "registrations", code), { termId: newTermId, status: newStatus });
+    registration.termId = newTermId;
+    registration.status = newStatus;
+  });
+
+  showWelcome();
+}
+
+async function cancelMyRegistration() {
+  if (!confirm("Naozaj chcete zrušiť svoju registráciu na workshop?")) return;
+
+  await runTransaction(db, async (tx) => {
+    const termRef = doc(db, "terms", registration.termId);
+    const termSnap = await tx.get(termRef);
+    if (termSnap.exists()) {
+      const data = termSnap.data();
+      if (registration.status === "waitlist") {
+        tx.update(termRef, { waitlistCount: Math.max(0, (data.waitlistCount || 0) - 1) });
+      } else {
+        tx.update(termRef, { booked: Math.max(0, (data.booked || 0) - 1) });
+      }
+    }
+    tx.update(doc(db, "registrations", code), { status: "cancelled" });
+  });
+
+  registration.status = "cancelled";
+  showWelcome();
+}
+
+function showFeedbackForm() {
+  welcomeCard.style.display = "none";
+  const feedbackCard = document.getElementById("feedbackCard");
+  feedbackCard.style.display = "block";
+
+  let selectedStars = registration.feedback?.rating || 0;
+  const starBox = document.getElementById("starRating");
+
+  function renderStars() {
+    starBox.innerHTML = "";
+    for (let i = 1; i <= 5; i++) {
+      const star = document.createElement("span");
+      star.textContent = i <= selectedStars ? "★" : "☆";
+      star.style.color = i <= selectedStars ? "#f5a623" : "var(--muted)";
+      star.addEventListener("click", () => {
+        selectedStars = i;
+        renderStars();
+      });
+      starBox.appendChild(star);
+    }
+  }
+  renderStars();
+
+  document.getElementById("feedbackNps").value = registration.feedback?.nps ?? "";
+  document.getElementById("feedbackComment").value = registration.feedback?.comment ?? "";
+  document.getElementById("feedbackMsg").style.display = "none";
+
+  document.getElementById("submitFeedbackBtn").onclick = async () => {
+    const feedback = {
+      rating: selectedStars,
+      nps: document.getElementById("feedbackNps").value ? parseInt(document.getElementById("feedbackNps").value, 10) : null,
+      comment: document.getElementById("feedbackComment").value.trim(),
+      submittedAt: Date.now()
+    };
+    await updateDoc(doc(db, "registrations", code), { feedback });
+    registration.feedback = feedback;
+    document.getElementById("feedbackMsg").style.display = "block";
+  };
 }
 
 function button(label, onClick, cls = "") {
@@ -205,5 +360,9 @@ function showFinalResult() {
 }
 
 document.getElementById("printCertBtn").addEventListener("click", () => window.print());
+document.getElementById("feedbackBackBtn").addEventListener("click", () => {
+  document.getElementById("feedbackCard").style.display = "none";
+  showWelcome();
+});
 
 loadQuestions();
