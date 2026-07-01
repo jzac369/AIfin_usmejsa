@@ -1,7 +1,7 @@
 import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, updateDoc, collection, getDocs, runTransaction
+  getFirestore, doc, getDoc, updateDoc, collection, getDocs, addDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 import { applyStoredTheme, toggleTheme, formatDateTime, downloadICS } from "./util.js";
@@ -70,7 +70,63 @@ async function login() {
     currentTerm = termSnap.exists() ? { id: termSnap.id, ...termSnap.data() } : null;
   }
 
+  logParticipantEvent("login", {});
+  loadMaterials();
   showWelcome();
+}
+
+async function loadMaterials() {
+  const snap = await getDoc(doc(db, "settings", "materials"));
+  const items = snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : [];
+  const section = document.getElementById("materialsSection");
+  const list = document.getElementById("materialsList");
+  if (items.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+  list.innerHTML = "";
+  items.forEach((m) => {
+    const link = document.createElement("a");
+    link.href = m.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.className = "btn secondary";
+    link.style.marginRight = "8px";
+    link.style.marginBottom = "8px";
+    link.textContent = `📄 ${m.title}`;
+    list.appendChild(link);
+  });
+  section.style.display = "block";
+}
+
+function hoursUntilCurrentTerm() {
+  if (!currentTerm?.datetime) return Infinity;
+  return (new Date(currentTerm.datetime).getTime() - Date.now()) / (1000 * 60 * 60);
+}
+
+async function logParticipantEvent(action, details) {
+  try {
+    await addDoc(collection(db, "auditLog"), {
+      action,
+      code,
+      details,
+      adminEmail: "účastník",
+      timestamp: Date.now()
+    });
+  } catch {
+    // logovanie nesmie zhodiť samotnú akciu
+  }
+}
+
+async function flagBlockedChangeAttempt(type) {
+  const flag = { type, timestamp: Date.now() };
+  try {
+    await updateDoc(doc(db, "registrations", code), { blockedChangeAttempt: flag });
+    registration.blockedChangeAttempt = flag;
+  } catch {
+    // ak sa označenie nepodarí zapísať, upozornenie účastníkovi aj tak zobrazíme
+  }
+  await logParticipantEvent("blocked-change-attempt", { type, hoursRemaining: Math.round(hoursUntilCurrentTerm()) });
 }
 
 function showWelcome() {
@@ -129,6 +185,14 @@ function renderManageBox() {
 
 async function showTransferOptions() {
   const container = document.getElementById("transferOptionsBox");
+
+  if (hoursUntilCurrentTerm() < 48) {
+    await flagBlockedChangeAttempt("transfer");
+    container.innerHTML = "";
+    alert("Presun na iný termín už nie je možný menej ako 48 hodín pred workshopom. Ak potrebujete zmeniť termín, kontaktujte prosím organizátora priamo.");
+    return;
+  }
+
   container.innerHTML = "<p style='color:var(--muted)'>Načítavam dostupné termíny…</p>";
   const snap = await getDocs(collection(db, "terms"));
   const allTerms = snap.docs
@@ -161,6 +225,13 @@ async function showTransferOptions() {
 }
 
 async function transferMyRegistration(newTermId) {
+  if (hoursUntilCurrentTerm() < 48) {
+    await flagBlockedChangeAttempt("transfer");
+    alert("Presun na iný termín už nie je možný menej ako 48 hodín pred workshopom. Ak potrebujete zmeniť termín, kontaktujte prosím organizátora priamo.");
+    document.getElementById("transferOptionsBox").innerHTML = "";
+    return;
+  }
+
   await runTransaction(db, async (tx) => {
     const oldTermRef = doc(db, "terms", registration.termId);
     const newTermRef = doc(db, "terms", newTermId);
@@ -199,6 +270,11 @@ async function transferMyRegistration(newTermId) {
 }
 
 async function cancelMyRegistration() {
+  if (hoursUntilCurrentTerm() < 48) {
+    await flagBlockedChangeAttempt("cancel");
+    alert("Zrušenie registrácie už nie je možné menej ako 48 hodín pred workshopom. Ak potrebujete zrušiť účasť, kontaktujte prosím organizátora priamo.");
+    return;
+  }
   if (!confirm("Naozaj chcete zrušiť svoju registráciu na workshop?")) return;
 
   await runTransaction(db, async (tx) => {

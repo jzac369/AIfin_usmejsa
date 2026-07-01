@@ -26,7 +26,11 @@
     <label for="adminEmail">Email</label>
     <input type="email" id="adminEmail" autocomplete="username" />
     <label for="adminPass">Heslo</label>
-    <input type="text" id="adminPass" autocomplete="current-password" style="-webkit-text-security: disc;" />
+    <input type="password" id="adminPass" autocomplete="current-password" />
+    <label class="checkbox-row" style="font-weight:400;">
+      <input type="checkbox" id="rememberLoginCheck" checked />
+      Zostať prihlásený na tomto zariadení
+    </label>
     <div id="loginError" class="alert error" style="display:none;"></div>
     <div class="actions">
       <button id="loginBtn">Prihlásiť sa</button>
@@ -54,6 +58,7 @@
       <button class="admin-nav-item" data-tab="questions"><span>❓</span> Otázky</button>
       <button class="admin-nav-item" data-tab="email"><span>✉️</span> Email</button>
       <button class="admin-nav-item" data-tab="landing"><span>🌐</span> Landing page</button>
+      <button class="admin-nav-item" data-tab="materials"><span>📚</span> Materiály</button>
     </div>
 
     <div class="admin-sidebar-footer">
@@ -195,6 +200,19 @@
           <button id="saveLandingBtn">💾 Uložiť obsah stránky</button>
         </div>
         <div id="landingSaveMsg" class="alert success" style="display:none;">Obsah bol uložený.</div>
+      </div>
+    </div>
+
+    <div id="tab-materials" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Materiály na stiahnutie</h2>
+        <p style="color:var(--muted)">Tento zoznam odkazov uvidia všetci účastníci po prihlásení sa svojím kódom. Vlož napr. odkaz na Google Drive alebo Dropbox s prezentáciou.</p>
+        <div id="materialsEditor"></div>
+        <div class="actions">
+          <button type="button" id="addMaterialBtn" class="secondary">➕ Pridať odkaz</button>
+          <button type="button" id="saveMaterialsBtn">💾 Uložiť materiály</button>
+        </div>
+        <div id="materialsSaveMsg" class="alert success" style="display:none;">Materiály boli uložené.</div>
       </div>
     </div>
 

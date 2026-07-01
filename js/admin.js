@@ -1,7 +1,8 @@
 import { firebaseConfig } from "./firebase-config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  setPersistence, browserLocalPersistence, browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
@@ -47,7 +48,9 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   errBox.style.display = "none";
   const email = document.getElementById("adminEmail").value.trim();
   const pass = document.getElementById("adminPass").value;
+  const remember = document.getElementById("rememberLoginCheck").checked;
   try {
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
     await signInWithEmailAndPassword(auth, email, pass);
   } catch (err) {
     errBox.textContent = "Nesprávny email alebo heslo.";
@@ -107,6 +110,7 @@ async function loadAll() {
   await loadQuestionsIntoEditor();
   await loadEmailTemplate();
   await loadLandingContent();
+  await loadMaterials();
   await loadAuditLog();
 }
 
@@ -255,40 +259,14 @@ function renderTable() {
     return;
   }
 
-  groupKeys.forEach((key) => {
-    const term = termMap[key];
-    const rows = groups[key].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-
-    const groupWrap = document.createElement("div");
-    groupWrap.style.marginBottom = "28px";
-    groupWrap.innerHTML = `
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding-bottom:8px; border-bottom:2px solid var(--primary);">
-        <h3 style="margin:0;">
-          📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
-          <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${rows.length} ${rows.length === 1 ? "účastník" : rows.length < 5 ? "účastníci" : "účastníkov"})</span>
-        </h3>
-        <button class="secondary print-attendance-btn" type="button">🖨️ Prezenčná listina</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th>
-            <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Prišiel</th><th></th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    `;
-
-    groupWrap.querySelector(".print-attendance-btn").addEventListener("click", () => {
-      printAttendanceSheet(term, rows);
-    });
-
-    const tbody = groupWrap.querySelector("tbody");
-    rows.forEach((r) => {
+  function fillRows(tbody, rowsList) {
+    rowsList.forEach((r) => {
       const tr = document.createElement("tr");
       tr.className = rowClass(r);
       const statusLabel = r.status === "cancelled" ? "zrušená" : r.status === "waitlist" ? "náhradník" : "potvrdená";
+      const warningIcon = r.blockedChangeAttempt
+        ? ` <span title="Pokus o zmenu/zrušenie menej ako 48h pred workshopom bol zablokovaný">⚠️</span>`
+        : "";
       tr.innerHTML = `
         <td><strong>${r.code}</strong></td>
         <td>${r.fullName}</td>
@@ -296,7 +274,7 @@ function renderTable() {
         <td>${r.phone}</td>
         <td>${r.entryScore != null ? r.entryScore + "/8" : "–"}</td>
         <td>${r.exitScore != null ? r.exitScore + "/8" : "–"}</td>
-        <td><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span></td>
+        <td><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span>${warningIcon}</td>
         <td><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
         <td><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
       `;
@@ -311,6 +289,52 @@ function renderTable() {
 
       tbody.appendChild(tr);
     });
+  }
+
+  const tableHeadHtml = `
+    <thead>
+      <tr>
+        <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th>
+        <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Prišiel</th><th></th>
+      </tr>
+    </thead>
+  `;
+
+  groupKeys.forEach((key) => {
+    const term = termMap[key];
+    const allRows = groups[key].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    const mainRows = allRows.filter((r) => r.status !== "waitlist");
+    const waitlistRows = allRows.filter((r) => r.status === "waitlist");
+
+    const groupWrap = document.createElement("div");
+    groupWrap.style.marginBottom = "28px";
+    groupWrap.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding-bottom:8px; border-bottom:2px solid var(--primary);">
+        <h3 style="margin:0;">
+          📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
+          <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${allRows.length} ${allRows.length === 1 ? "účastník" : allRows.length < 5 ? "účastníci" : "účastníkov"})</span>
+        </h3>
+        <button class="secondary print-attendance-btn" type="button">🖨️ Prezenčná listina</button>
+      </div>
+      <table>${tableHeadHtml}<tbody class="main-rows-body"></tbody></table>
+    `;
+
+    groupWrap.querySelector(".print-attendance-btn").addEventListener("click", () => {
+      printAttendanceSheet(term, allRows);
+    });
+
+    fillRows(groupWrap.querySelector(".main-rows-body"), mainRows);
+
+    if (waitlistRows.length > 0) {
+      const waitlistWrap = document.createElement("div");
+      waitlistWrap.className = "waitlist-section";
+      waitlistWrap.innerHTML = `
+        <h4>🕒 Náhradníci – čakacia listina (${waitlistRows.length})</h4>
+        <table>${tableHeadHtml}<tbody class="waitlist-rows-body"></tbody></table>
+      `;
+      fillRows(waitlistWrap.querySelector(".waitlist-rows-body"), waitlistRows);
+      groupWrap.appendChild(waitlistWrap);
+    }
 
     container.appendChild(groupWrap);
   });
@@ -831,7 +855,94 @@ document.getElementById("saveLandingBtn").addEventListener("click", async () => 
   setTimeout(() => (document.getElementById("landingSaveMsg").style.display = "none"), 3000);
 });
 
+// ---------- MATERIALS ----------
+let materials = [];
+
+async function loadMaterials() {
+  const snap = await getDoc(doc(db, "settings", "materials"));
+  materials = snap.exists() && Array.isArray(snap.data().items) ? snap.data().items : [];
+  renderMaterialsEditor();
+}
+
+function renderMaterialsEditor() {
+  const editor = document.getElementById("materialsEditor");
+  editor.innerHTML = "";
+  if (materials.length === 0) {
+    editor.innerHTML = "<p style='color:var(--muted)'>Zatiaľ žiadne materiály. Pridaj prvý odkaz nižšie.</p>";
+    return;
+  }
+  materials.forEach((m, i) => {
+    const row = document.createElement("div");
+    row.style.display = "grid";
+    row.style.gridTemplateColumns = "1fr 2fr auto";
+    row.style.gap = "8px";
+    row.style.alignItems = "end";
+    row.style.marginBottom = "10px";
+    row.innerHTML = `
+      <div><label>Názov</label><input type="text" class="material-title" value="${m.title || ""}" placeholder="napr. Prezentácia zo workshopu" /></div>
+      <div><label>Odkaz (URL)</label><input type="text" class="material-url" value="${m.url || ""}" placeholder="https://..." /></div>
+      <button type="button" class="danger remove-material-btn" style="height:42px;">🗑️</button>
+    `;
+    row.querySelector(".material-title").addEventListener("input", (e) => (materials[i].title = e.target.value));
+    row.querySelector(".material-url").addEventListener("input", (e) => (materials[i].url = e.target.value));
+    row.querySelector(".remove-material-btn").addEventListener("click", () => {
+      materials.splice(i, 1);
+      renderMaterialsEditor();
+    });
+    editor.appendChild(row);
+  });
+}
+
+document.getElementById("addMaterialBtn").addEventListener("click", () => {
+  materials.push({ title: "", url: "" });
+  renderMaterialsEditor();
+});
+
+document.getElementById("saveMaterialsBtn").addEventListener("click", async () => {
+  const cleaned = materials.filter((m) => m.title.trim() && m.url.trim());
+  await setDoc(doc(db, "settings", "materials"), { items: cleaned });
+  materials = cleaned;
+  renderMaterialsEditor();
+  document.getElementById("materialsSaveMsg").style.display = "block";
+  setTimeout(() => (document.getElementById("materialsSaveMsg").style.display = "none"), 3000);
+});
+
 // ---------- AUDIT LOG ----------
+const FIELD_LABELS_SK = { firstName: "Meno", lastName: "Priezvisko", city: "Mesto", email: "Email", phone: "Telefón" };
+
+function describeAuditEntry(e) {
+  const d = e.details || {};
+  const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
+  const termLabel = (id) => (termMap[id] ? formatDateTime(termMap[id].datetime) : id || "–");
+
+  switch (e.action) {
+    case "edit": {
+      const parts = Object.entries(d).map(([k, v]) => `${FIELD_LABELS_SK[k] || k}: „${v.from}“ → „${v.to}“`);
+      return parts.length ? `Upravené údaje účastníka (${parts.join(", ")})` : "Upravené údaje účastníka (bez zmeny hodnôt)";
+    }
+    case "notes":
+      return "Upravená interná poznámka o účastníkovi";
+    case "attendance":
+      return d.attended ? "Účastník označený ako prítomný na workshope" : "Zrušené označenie prítomnosti účastníka";
+    case "cancel":
+      return "Registrácia bola zrušená";
+    case "transfer":
+      return `Registrácia presunutá na iný termín: ${termLabel(d.from)} → ${termLabel(d.to)}`;
+    case "delete":
+      return `Registrácia natrvalo vymazaná (${d.snapshot?.fullName || "?"}, ${d.snapshot?.email || "?"})`;
+    case "waitlist-promoted":
+      return `Účastník presunutý z čakacej listiny na potvrdenú registráciu (termín ${termLabel(d.termId)})`;
+    case "email-resent":
+      return `Ručne odoslaný potvrdzujúci email na adresu ${d.email || "?"}`;
+    case "login":
+      return "Účastník sa prihlásil do svojej zóny cez kód";
+    case "blocked-change-attempt":
+      return `⚠️ Zablokovaný pokus o ${d.type === "cancel" ? "zrušenie" : "presun termínu"} menej ako 48 hodín pred workshopom`;
+    default:
+      return e.action || "Neznáma akcia";
+  }
+}
+
 async function loadAuditLog() {
   const snap = await getDocs(collection(db, "auditLog"));
   const entries = snap.docs.map((d) => d.data()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
@@ -844,15 +955,14 @@ async function loadAuditLog() {
 
   const table = document.createElement("table");
   table.innerHTML = `
-    <thead><tr><th>Kedy</th><th>Admin</th><th>Akcia</th><th>Kód účastníka</th><th>Detail</th></tr></thead>
+    <thead><tr><th>Kedy</th><th>Vykonal</th><th>Kód účastníka</th><th>Čo sa stalo</th></tr></thead>
     <tbody>
       ${entries.slice(0, 300).map((e) => `
-        <tr>
+        <tr${e.action === "blocked-change-attempt" ? ' style="background:rgba(229,72,77,.08);"' : ""}>
           <td>${e.timestamp ? new Date(e.timestamp).toLocaleString("sk-SK") : ""}</td>
-          <td>${e.adminEmail || ""}</td>
-          <td>${e.action || ""}</td>
-          <td>${e.code || ""}</td>
-          <td><code style="font-size:.75rem;">${JSON.stringify(e.details || {})}</code></td>
+          <td>${e.adminEmail || "–"}</td>
+          <td>${e.code || "–"}</td>
+          <td>${describeAuditEntry(e)}</td>
         </tr>
       `).join("")}
     </tbody>

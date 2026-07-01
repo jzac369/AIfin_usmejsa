@@ -36,7 +36,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow update: if isAdmin() ||
                       request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers','status','termId','feedback']);
+                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers','status','termId','feedback','blockedChangeAttempt']);
       allow delete: if isAdmin();
     }
 
@@ -54,9 +54,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Interný log zmien vykonaných adminom - viditeľný a zapisovateľný len adminom.
+    // Interný log zmien - čítať ho môže len admin. Zapisovať môže admin
+    // čokoľvek; účastník (bez prihlásenia) smie zapísať LEN záznam o svojom
+    // prihlásení kódom alebo o zablokovanom pokuse o zmenu/zrušenie tesne
+    // pred workshopom - obe majú presne definovaný, neškodný tvar.
     match /auditLog/{entryId} {
-      allow read, create: if isAdmin();
+      allow read: if isAdmin();
+      allow create: if isAdmin() ||
+                      (request.resource.data.action in ['login', 'blocked-change-attempt'] &&
+                       request.resource.data.keys().hasOnly(['action','code','details','adminEmail','timestamp']));
     }
   }
 }
