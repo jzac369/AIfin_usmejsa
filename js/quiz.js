@@ -4,7 +4,7 @@ import {
   getFirestore, doc, getDoc, updateDoc, collection, getDocs, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
-import { applyStoredTheme, toggleTheme, formatDateTime } from "./util.js";
+import { applyStoredTheme, toggleTheme, formatDateTime, downloadICS } from "./util.js";
 
 applyStoredTheme();
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
@@ -29,6 +29,7 @@ async function loadQuestions() {
 
 let registration = null;
 let code = null;
+let currentTerm = null;
 let activeSet = null; // "entry" | "exit"
 let currentIndex = 0;
 let answers = [];
@@ -63,12 +64,23 @@ async function login() {
   code = input;
   registration = snap.data();
   loginCard.style.display = "none";
+
+  if (registration.termId) {
+    const termSnap = await getDoc(doc(db, "terms", registration.termId));
+    currentTerm = termSnap.exists() ? { id: termSnap.id, ...termSnap.data() } : null;
+  }
+
   showWelcome();
 }
 
 function showWelcome() {
   welcomeCard.style.display = "block";
   document.getElementById("welcomeTitle").textContent = `Vitajte, ${registration.fullName.split(" ")[0]}!`;
+  document.getElementById("profileAvatar").textContent =
+    `${(registration.firstName || registration.fullName || "?")[0] || "?"}${(registration.lastName || "")[0] || ""}`.toUpperCase();
+  document.getElementById("welcomeTermInfo").textContent = currentTerm
+    ? `📅 Váš termín: ${formatDateTime(currentTerm.datetime)}`
+    : "";
 
   const badges = document.getElementById("statusBadges");
   const statusLabel = registration.status === "cancelled" ? "zrušená" : registration.status === "waitlist" ? "náhradník" : "potvrdená";
@@ -94,25 +106,25 @@ function showWelcome() {
       const b = button("Zobraziť môj výsledok a certifikát", showFinalResult);
       actions.appendChild(b);
     }
+  } else {
+    actions.innerHTML = "<p style='color:var(--muted); margin:0;'>Kvízy nie sú dostupné, registrácia je zrušená.</p>";
   }
 
-  actions.appendChild(button("Zanechať spätnú väzbu 💬", showFeedbackForm, "secondary"));
-
   renderManageBox();
+  document.getElementById("qrDisplayBox").style.display = "none";
 }
 
 function renderManageBox() {
   const box = document.getElementById("manageBox");
+  const transferContainer = document.getElementById("transferOptionsBox");
   box.innerHTML = "";
+  transferContainer.innerHTML = "";
   if (registration.status === "cancelled") {
-    box.innerHTML = `<p style="color:var(--muted)">Táto registrácia je zrušená. Ak sa chcete znova prihlásiť, vyplňte prosím nový registračný formulár.</p>`;
+    box.innerHTML = `<p style="color:var(--muted); margin:0;">Táto registrácia je zrušená. Ak sa chcete znova prihlásiť, vyplňte prosím nový registračný formulár.</p>`;
     return;
   }
-  const transferBtn = button("🔁 Zmeniť termín", showTransferOptions, "secondary");
-  const cancelBtn = button("🚫 Zrušiť registráciu", cancelMyRegistration, "danger");
-  box.appendChild(transferBtn);
-  box.appendChild(cancelBtn);
-  box.appendChild(document.createElement("div")).id = "transferOptionsBox";
+  box.appendChild(button("🔁 Zmeniť termín", showTransferOptions, "secondary"));
+  box.appendChild(button("🚫 Zrušiť registráciu", cancelMyRegistration, "danger"));
 }
 
 async function showTransferOptions() {
@@ -181,6 +193,8 @@ async function transferMyRegistration(newTermId) {
     registration.status = newStatus;
   });
 
+  const termSnap = await getDoc(doc(db, "terms", newTermId));
+  currentTerm = termSnap.exists() ? { id: termSnap.id, ...termSnap.data() } : null;
   showWelcome();
 }
 
@@ -363,6 +377,43 @@ document.getElementById("printCertBtn").addEventListener("click", () => window.p
 document.getElementById("feedbackBackBtn").addEventListener("click", () => {
   document.getElementById("feedbackCard").style.display = "none";
   showWelcome();
+});
+
+document.getElementById("feedbackNavBtn").addEventListener("click", () => {
+  welcomeCard.style.display = "none";
+  showFeedbackForm();
+});
+
+document.getElementById("copyCodeBtn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(code);
+    const btn = document.getElementById("copyCodeBtn");
+    const original = btn.textContent;
+    btn.textContent = "✅ Skopírované!";
+    setTimeout(() => (btn.textContent = original), 1800);
+  } catch {
+    alert(`Váš kód: ${code}`);
+  }
+});
+
+document.getElementById("showQrBtn").addEventListener("click", () => {
+  const box = document.getElementById("qrDisplayBox");
+  const isVisible = box.style.display !== "none";
+  if (isVisible) {
+    box.style.display = "none";
+    return;
+  }
+  box.innerHTML = "";
+  box.style.display = "flex";
+  new QRCode(box, { text: code, width: 140, height: 140 });
+});
+
+document.getElementById("icsDownloadBtn").addEventListener("click", () => {
+  if (currentTerm) {
+    downloadICS(currentTerm);
+  } else {
+    alert("Termín sa nepodarilo načítať.");
+  }
 });
 
 loadQuestions();

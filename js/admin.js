@@ -266,9 +266,8 @@ function renderTable() {
       <table>
         <thead>
           <tr>
-            <th>Kód</th><th>Meno</th><th>Mesto</th><th>Email</th><th>Telefón</th>
-            <th>Zdroj</th><th>Zariadenia</th><th>Skúsenosti AI</th><th>Dôvod</th>
-            <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Prišiel</th><th>Poznámka (len admin)</th><th>Akcie</th>
+            <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th>
+            <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Prišiel</th><th></th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -287,24 +286,13 @@ function renderTable() {
       tr.innerHTML = `
         <td><strong>${r.code}</strong></td>
         <td>${r.fullName}</td>
-        <td>${r.city}</td>
         <td>${r.email}</td>
         <td>${r.phone}</td>
-        <td>${r.survey?.source ?? ""}</td>
-        <td>${(r.survey?.devices ?? []).join(", ")}</td>
-        <td>${r.survey?.aiExperience ?? ""}</td>
-        <td>${r.survey?.reason ?? ""}</td>
         <td>${r.entryScore != null ? r.entryScore + "/8" : "–"}</td>
         <td>${r.exitScore != null ? r.exitScore + "/8" : "–"}</td>
         <td><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span></td>
         <td><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
-        <td><textarea class="admin-notes" placeholder="Interná poznámka...">${r.adminNotes || ""}</textarea></td>
-        <td class="row-actions">
-          <button type="button" class="secondary edit-btn">✏️ Upraviť</button>
-          <button type="button" class="secondary transfer-btn">🔁 Presunúť</button>
-          <button type="button" class="secondary cancel-btn">🚫 Zrušiť</button>
-          <button type="button" class="danger delete-btn">🗑️ Vymazať</button>
-        </td>
+        <td><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
       `;
 
       tr.querySelector(".attended-check").addEventListener("change", async (e) => {
@@ -313,21 +301,7 @@ function renderTable() {
         await logAudit("attendance", r.code, { attended: e.target.checked });
       });
 
-      let notesTimer;
-      tr.querySelector(".admin-notes").addEventListener("input", (e) => {
-        clearTimeout(notesTimer);
-        const value = e.target.value;
-        notesTimer = setTimeout(async () => {
-          await updateDoc(doc(db, "registrations", r.code), { adminNotes: value });
-          r.adminNotes = value;
-          await logAudit("notes", r.code, { adminNotes: value });
-        }, 600);
-      });
-
-      tr.querySelector(".edit-btn").addEventListener("click", () => openEditPanel(tr, r));
-      tr.querySelector(".transfer-btn").addEventListener("click", () => transferRegistration(r));
-      tr.querySelector(".cancel-btn").addEventListener("click", () => cancelRegistration(r));
-      tr.querySelector(".delete-btn").addEventListener("click", () => deleteRegistration(r));
+      tr.querySelector(".detail-toggle-btn").addEventListener("click", () => openDetailPanel(tr, r));
 
       tbody.appendChild(tr);
     });
@@ -336,38 +310,55 @@ function renderTable() {
   });
 }
 
-function openEditPanel(tr, r) {
+function openDetailPanel(tr, r) {
   const existing = tr.nextElementSibling;
-  if (existing && existing.classList.contains("edit-panel-row")) {
+  if (existing && existing.classList.contains("detail-panel-row")) {
     existing.remove();
     return;
   }
   const panelRow = document.createElement("tr");
-  panelRow.className = "edit-panel-row";
+  panelRow.className = "detail-panel-row";
   const td = document.createElement("td");
-  td.colSpan = 15;
+  td.colSpan = 9;
   td.innerHTML = `
     <div class="card" style="margin:8px 0;">
-      <label>Meno</label>
-      <input type="text" id="edit-firstName" value="${r.firstName || ""}" />
-      <label>Priezvisko</label>
-      <input type="text" id="edit-lastName" value="${r.lastName || ""}" />
-      <label>Mesto</label>
-      <input type="text" id="edit-city" value="${r.city || ""}" />
-      <label>Email</label>
-      <input type="email" id="edit-email" value="${r.email || ""}" />
-      <label>Telefón</label>
-      <input type="text" id="edit-phone" value="${r.phone || ""}" />
+      <p style="color:var(--muted); font-size:.85rem; margin-top:0;">
+        <strong>Zdroj:</strong> ${r.survey?.source ?? "–"} &nbsp;·&nbsp;
+        <strong>Zariadenia:</strong> ${(r.survey?.devices ?? []).join(", ") || "–"} &nbsp;·&nbsp;
+        <strong>Skúsenosti AI:</strong> ${r.survey?.aiExperience ?? "–"} &nbsp;·&nbsp;
+        <strong>Dôvod:</strong> ${r.survey?.reason ?? "–"}
+      </p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:0 16px;">
+        <div><label>Meno</label><input type="text" id="edit-firstName" value="${r.firstName || ""}" /></div>
+        <div><label>Priezvisko</label><input type="text" id="edit-lastName" value="${r.lastName || ""}" /></div>
+        <div><label>Mesto</label><input type="text" id="edit-city" value="${r.city || ""}" /></div>
+        <div><label>Email</label><input type="email" id="edit-email" value="${r.email || ""}" /></div>
+        <div><label>Telefón</label><input type="text" id="edit-phone" value="${r.phone || ""}" /></div>
+      </div>
+      <label>Poznámka (viditeľná len v admin zóne)</label>
+      <textarea class="admin-notes" placeholder="Interná poznámka...">${r.adminNotes || ""}</textarea>
       <div class="actions">
         <button type="button" id="edit-save-btn">💾 Uložiť zmeny</button>
-        <button type="button" class="secondary" id="edit-cancel-btn">Zrušiť úpravu</button>
+        <button type="button" class="secondary transfer-btn">🔁 Presunúť na iný termín</button>
+        <button type="button" class="secondary cancel-btn">🚫 Zrušiť registráciu</button>
+        <button type="button" class="danger delete-btn">🗑️ Natrvalo vymazať</button>
       </div>
     </div>
   `;
   panelRow.appendChild(td);
   tr.after(panelRow);
 
-  panelRow.querySelector("#edit-cancel-btn").addEventListener("click", () => panelRow.remove());
+  let notesTimer;
+  panelRow.querySelector(".admin-notes").addEventListener("input", (e) => {
+    clearTimeout(notesTimer);
+    const value = e.target.value;
+    notesTimer = setTimeout(async () => {
+      await updateDoc(doc(db, "registrations", r.code), { adminNotes: value });
+      r.adminNotes = value;
+      await logAudit("notes", r.code, { adminNotes: value });
+    }, 600);
+  });
+
   panelRow.querySelector("#edit-save-btn").addEventListener("click", async () => {
     const updated = {
       firstName: panelRow.querySelector("#edit-firstName").value.trim(),
@@ -386,9 +377,12 @@ function openEditPanel(tr, r) {
     await updateDoc(doc(db, "registrations", r.code), updated);
     Object.assign(r, updated);
     await logAudit("edit", r.code, diff);
-    panelRow.remove();
     renderTable();
   });
+
+  panelRow.querySelector(".transfer-btn").addEventListener("click", () => transferRegistration(r));
+  panelRow.querySelector(".cancel-btn").addEventListener("click", () => cancelRegistration(r));
+  panelRow.querySelector(".delete-btn").addEventListener("click", () => deleteRegistration(r));
 }
 
 async function cancelRegistration(r) {
@@ -510,18 +504,9 @@ async function deleteRegistration(r) {
 }
 
 function printAttendanceSheet(term, rows) {
-  const w = window.open("", "_blank");
   const title = term ? formatDateTime(term.datetime) : "Workshop";
-  w.document.write(`
-    <html><head><title>Prezenčná listina – ${title}</title>
-    <style>
-      body { font-family: Arial, sans-serif; padding: 24px; }
-      h1 { font-size: 18px; }
-      table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-      th, td { border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px; }
-      th { background: #eee; }
-    </style>
-    </head><body>
+  const area = document.getElementById("attendancePrintArea");
+  area.innerHTML = `
     <h1>Prezenčná listina – Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“</h1>
     <p>Termín: ${title}</p>
     <table>
@@ -530,11 +515,18 @@ function printAttendanceSheet(term, rows) {
         ${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${r.fullName}</td><td>${r.city}</td><td>${r.code}</td><td></td></tr>`).join("")}
       </tbody>
     </table>
-    </body></html>
-  `);
-  w.document.close();
-  w.focus();
-  w.print();
+  `;
+
+  const landscapeStyle = document.createElement("style");
+  landscapeStyle.id = "landscapePrintStyle";
+  landscapeStyle.textContent = "@page { size: landscape; }";
+  document.head.appendChild(landscapeStyle);
+  document.body.classList.add("printing-attendance");
+
+  window.print();
+
+  document.body.classList.remove("printing-attendance");
+  landscapeStyle.remove();
 }
 
 document.getElementById("searchInput").addEventListener("input", renderTable);
@@ -560,6 +552,8 @@ function renderResultsTable() {
   rows.forEach((r) => {
     const entry = r.entryScore != null ? r.entryScore : null;
     const exit = r.exitScore != null ? r.exitScore : null;
+    const entryPct = entry != null ? Math.round((entry / 8) * 100) : null;
+    const exitPct = exit != null ? Math.round((exit / 8) * 100) : null;
     let diffText = "–";
     let diffColor = "";
     if (entry != null && exit != null) {
@@ -571,8 +565,8 @@ function renderResultsTable() {
     tr.innerHTML = `
       <td><strong>${r.code}</strong></td>
       <td>${r.fullName}</td>
-      <td>${entry != null ? entry + "/8" : "–"}</td>
-      <td>${exit != null ? exit + "/8" : "–"}</td>
+      <td>${entry != null ? `${entry}/8 (${entryPct} %)` : "–"}</td>
+      <td>${exit != null ? `${exit}/8 (${exitPct} %)` : "–"}</td>
       <td style="font-weight:700; color:${diffColor || "inherit"};">${diffText}</td>
     `;
     tbody.appendChild(tr);

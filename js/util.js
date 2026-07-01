@@ -98,14 +98,16 @@ function downloadCSV(filename, header, rows) {
 }
 
 export function exportResultsCSV(registrations) {
-  const header = ["Kód", "Meno a priezvisko", "Vstupný kvíz (z 8)", "Výstupný kvíz (z 8)", "Zmena"];
+  const header = ["Kód", "Meno a priezvisko", "Vstupný kvíz (z 8)", "Vstupný kvíz (%)", "Výstupný kvíz (z 8)", "Výstupný kvíz (%)", "Zmena"];
   const rows = registrations
     .filter((r) => r.entryScore != null || r.exitScore != null)
     .map((r) => {
       const entry = r.entryScore != null ? r.entryScore : "";
       const exit = r.exitScore != null ? r.exitScore : "";
+      const entryPct = r.entryScore != null ? Math.round((r.entryScore / 8) * 100) : "";
+      const exitPct = r.exitScore != null ? Math.round((r.exitScore / 8) * 100) : "";
       const diff = r.entryScore != null && r.exitScore != null ? r.exitScore - r.entryScore : "";
-      return [r.code, r.fullName, entry, exit, diff];
+      return [r.code, r.fullName, entry, entryPct, exit, exitPct, diff];
     });
   downloadCSV("vysledky_kvizov.csv", header, rows);
 }

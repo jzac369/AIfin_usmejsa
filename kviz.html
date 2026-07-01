@@ -34,11 +34,37 @@
     </div>
   </div>
 
-  <div class="card" id="welcomeCard" style="display:none;">
-    <h2 id="welcomeTitle"></h2>
-    <div id="statusBadges"></div>
-    <div class="actions" id="welcomeActions" style="margin-top:18px;"></div>
-    <div id="manageBox" style="margin-top:22px; padding-top:16px; border-top:1px solid var(--border);"></div>
+  <div class="card profile-card" id="welcomeCard" style="display:none;">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar"></div>
+      <div>
+        <h2 id="welcomeTitle" style="margin:0;"></h2>
+        <p id="welcomeTermInfo" style="color:var(--muted); margin:4px 0 0;"></p>
+      </div>
+    </div>
+    <div id="statusBadges" style="margin-top:12px;"></div>
+
+    <div class="section-group">
+      <h3>📝 Váš kvíz</h3>
+      <div class="actions" id="welcomeActions"></div>
+    </div>
+
+    <div class="section-group">
+      <h3>⚙️ Spravovať registráciu</h3>
+      <div id="manageBox" class="actions"></div>
+      <div id="transferOptionsBox"></div>
+    </div>
+
+    <div class="section-group">
+      <h3>💬 Spätná väzba a ostatné</h3>
+      <div class="actions">
+        <button id="feedbackNavBtn" class="secondary">💬 Zanechať spätnú väzbu</button>
+        <button id="showQrBtn" class="secondary">📱 Zobraziť QR kód</button>
+        <button id="copyCodeBtn" class="secondary">📋 Kopírovať kód</button>
+        <button id="icsDownloadBtn" class="secondary">📅 Pridať do kalendára</button>
+      </div>
+      <div id="qrDisplayBox" class="qr-box" style="display:none; justify-content:center;"></div>
+    </div>
   </div>
 
   <div class="card" id="feedbackCard" style="display:none;">
@@ -87,6 +113,7 @@
   Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script type="module" src="js/quiz.js"></script>
 </body>
 </html>

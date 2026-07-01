@@ -378,6 +378,42 @@ footer.site-footer {
 .certificate h2 { font-size: 1.6rem; }
 .certificate .name { font-size: 1.8rem; font-weight: 800; margin: 14px 0; color: var(--primary); }
 
+.profile-card { max-width: 640px; margin-inline: auto; }
+.profile-header { display: flex; align-items: center; gap: 16px; }
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+.section-group {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.section-group h3 { margin: 0 0 10px; font-size: 1rem; }
+
 @media print {
   header.topbar, footer.site-footer, .no-print { display: none !important; }
+}
+
+#attendancePrintArea { display: none; }
+#attendancePrintArea table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+#attendancePrintArea th, #attendancePrintArea td { border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px; }
+#attendancePrintArea th { background: #eee; }
+
+@media print {
+  body.printing-attendance > *:not(#attendancePrintArea) { display: none !important; }
+  body.printing-attendance #attendancePrintArea {
+    display: block;
+    color: #000;
+    background: #fff;
+  }
 }
