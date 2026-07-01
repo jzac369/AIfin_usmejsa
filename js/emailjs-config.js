@@ -16,7 +16,7 @@
 // ============================================================
 
 export const emailjsConfig = {
-  serviceId: "service_vyijjje",
+  serviceId: "service_mgzh4y5",
   templateId: "template_c9lio3o",
   publicKey: "eOd4Q1os_TN-pSs2S"
 };
