@@ -1,0 +1,38 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // Termíny workshopu - verejne čitateľné (aby si ich videla registrácia),
+    // upravovať ich môže len prihlásený admin.
+    match /terms/{termId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Registrácie - dokument ID je tajný 5-miestny kód účastníka.
+    // - "create" pri registrácii môže robiť ktokoľvek (verejný formulár).
+    // - "get" (čítanie JEDNÉHO konkrétneho dokumentu) je povolené komukoľvek,
+    //   kto POZNÁ presný kód - kód teda funguje ako heslo. Bez znalosti kódu
+    //   sa nedá k záznamu dostať.
+    // - "list" (vypísanie VŠETKÝCH registrácií, napr. v admin zóne) je povolené
+    //   iba prihlásenému adminovi.
+    // - "update" je obmedzené len na polia vzťahujúce sa na kvízy, aby účastník
+    //   cez svoj kód nemohol meniť svoje osobné údaje.
+    match /registrations/{code} {
+      allow create: if request.resource.data.keys().hasAll(
+                      ['fullName','city','email','phone','termId','survey','createdAt']
+                    );
+      allow get: if true;
+      allow list: if isAdmin();
+      allow update: if isAdmin() ||
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers']);
+      allow delete: if isAdmin();
+    }
+  }
+}

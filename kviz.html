@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kvíz – AI a finančné rozhodnutia</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<script>
+  (function(){ var t = localStorage.getItem("theme") || "light"; document.documentElement.setAttribute("data-theme", t); })();
+</script>
+
+<header class="topbar">
+  <div class="brand">🤖💶 AI & Financie <span class="badge">workshop</span></div>
+  <nav>
+    <a href="index.html">Registrácia</a>
+    <a href="kviz.html">Môj kód / Kvíz</a>
+    <a href="admin.html">Admin</a>
+  </nav>
+  <button class="theme-toggle" id="themeBtn" title="Prepnúť tému">🌙</button>
+</header>
+
+<div class="container">
+
+  <div class="card" id="loginCard">
+    <h2>Prihlásenie kódom</h2>
+    <p style="color:var(--muted)">Zadajte svoj 5-miestny kód, ktorý ste dostali pri registrácii.</p>
+    <label for="codeInput">Kód</label>
+    <input type="text" id="codeInput" maxlength="5" style="text-transform:uppercase; letter-spacing:.3em; font-weight:700; text-align:center; font-size:1.3rem;" placeholder="ABCDE" />
+    <div id="loginError" class="alert error" style="display:none;"></div>
+    <div class="actions">
+      <button id="loginBtn">Prihlásiť sa</button>
+    </div>
+  </div>
+
+  <div class="card" id="welcomeCard" style="display:none;">
+    <h2 id="welcomeTitle"></h2>
+    <div id="statusBadges"></div>
+    <div class="actions" id="welcomeActions" style="margin-top:18px;"></div>
+  </div>
+
+  <div class="card" id="quizCard" style="display:none;">
+    <h2 id="quizTitle"></h2>
+    <div class="progress-bar"><div id="progressFill" style="width:0%"></div></div>
+    <div id="quizBody"></div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none;">
+    <div class="result-hero">
+      <div id="resultBadge"></div>
+      <div class="score" id="scoreOut"></div>
+      <p id="scoreLabel"></p>
+    </div>
+    <div id="compareBox"></div>
+    <div class="actions" style="justify-content:center;" id="resultActions"></div>
+  </div>
+
+  <div class="card no-print" id="certCardWrap" style="display:none;">
+    <h2>🏆 Váš certifikát</h2>
+    <div class="certificate" id="certificate"></div>
+    <div class="actions" style="justify-content:center; margin-top:16px;">
+      <button id="printCertBtn">🖨️ Vytlačiť / uložiť ako PDF</button>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“
+</footer>
+
+<script type="module" src="js/quiz.js"></script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<script>
+  (function(){ var t = localStorage.getItem("theme") || "light"; document.documentElement.setAttribute("data-theme", t); })();
+</script>
+
+<header class="topbar">
+  <div class="brand">🤖💶 AI & Financie <span class="badge">workshop</span></div>
+  <nav>
+    <a href="index.html">Registrácia</a>
+    <a href="kviz.html">Môj kód / Kvíz</a>
+    <a href="admin.html">Admin</a>
+  </nav>
+  <button class="theme-toggle" id="themeBtn" title="Prepnúť tému">🌙</button>
+</header>
+
+<section class="hero">
+  <h1>Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach</h1>
+  <p>Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách. Vyberte si termín a zaregistrujte sa nižšie.</p>
+</section>
+
+<div class="container">
+
+  <div class="card" id="loadingCard">
+    <p>Načítavam dostupné termíny…</p>
+  </div>
+
+  <form class="card" id="regForm" style="display:none;">
+    <h2>1. Vyberte termín</h2>
+    <div class="grid-terms" id="termsGrid"></div>
+    <div id="termError" class="alert error" style="display:none;">Prosím vyberte termín workshopu.</div>
+
+    <h2>2. Vaše údaje</h2>
+    <label for="fullName">Meno a priezvisko *</label>
+    <input type="text" id="fullName" required autocomplete="name" />
+
+    <label for="city">Mesto *</label>
+    <input type="text" id="city" required autocomplete="address-level2" />
+
+    <label for="email">Emailová adresa *</label>
+    <input type="email" id="email" required autocomplete="email" />
+
+    <label for="phone">Telefónne číslo *</label>
+    <input type="tel" id="phone" required autocomplete="tel" placeholder="+421 9xx xxx xxx" />
+
+    <h2>3. Krátky dotazník</h2>
+
+    <fieldset>
+      <legend>1. Ako ste sa dozvedeli o tejto akcii?</legend>
+      <div class="radio-row"><input type="radio" name="source" value="Sociálne siete" required> <label style="margin:0;font-weight:400;">Sociálne siete</label></div>
+      <div class="radio-row"><input type="radio" name="source" value="Email"> <label style="margin:0;font-weight:400;">Email / newsletter</label></div>
+      <div class="radio-row"><input type="radio" name="source" value="Odporúčanie priateľa alebo rodiny"> <label style="margin:0;font-weight:400;">Odporúčanie priateľa / rodiny</label></div>
+      <div class="radio-row"><input type="radio" name="source" value="Plagát alebo leták"> <label style="margin:0;font-weight:400;">Plagát / leták</label></div>
+      <div class="radio-row"><input type="radio" name="source" value="Webstránka mesta alebo knižnice"> <label style="margin:0;font-weight:400;">Webstránka mesta / knižnice</label></div>
+      <div class="radio-row"><input type="radio" name="source" value="Iné"> <label style="margin:0;font-weight:400;">Iné</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. Ktoré zariadenia vlastníte? (môžete vybrať viac)</legend>
+      <div class="checkbox-row"><input type="checkbox" name="devices" value="Tablet"> <label style="margin:0;font-weight:400;">Tablet</label></div>
+      <div class="checkbox-row"><input type="checkbox" name="devices" value="Mobilný telefón"> <label style="margin:0;font-weight:400;">Mobilný telefón</label></div>
+      <div class="checkbox-row"><input type="checkbox" name="devices" value="Počítač / notebook"> <label style="margin:0;font-weight:400;">Počítač / notebook</label></div>
+      <div class="checkbox-row"><input type="checkbox" name="devices" value="Iné"> <label style="margin:0;font-weight:400;">Iné</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Máte skúsenosti s prácou s AI?</legend>
+      <div class="radio-row"><input type="radio" name="aiExperience" value="Žiadne" required> <label style="margin:0;font-weight:400;">Žiadne</label></div>
+      <div class="radio-row"><input type="radio" name="aiExperience" value="Základné (napr. pár krát ChatGPT)"> <label style="margin:0;font-weight:400;">Základné (napr. pár krát ChatGPT)</label></div>
+      <div class="radio-row"><input type="radio" name="aiExperience" value="Pravidelne používam AI nástroje"> <label style="margin:0;font-weight:400;">Pravidelne používam AI nástroje</label></div>
+      <div class="radio-row"><input type="radio" name="aiExperience" value="Pracujem/študujem v oblasti AI"> <label style="margin:0;font-weight:400;">Pracujem / študujem v oblasti AI</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>4. Ako by ste ohodnotili svoje digitálne zručnosti?</legend>
+      <div class="radio-row"><input type="radio" name="digitalSkill" value="1 - Začiatočník" required> <label style="margin:0;font-weight:400;">1 – Začiatočník</label></div>
+      <div class="radio-row"><input type="radio" name="digitalSkill" value="2"> <label style="margin:0;font-weight:400;">2</label></div>
+      <div class="radio-row"><input type="radio" name="digitalSkill" value="3 - Priemer"> <label style="margin:0;font-weight:400;">3 – Priemer</label></div>
+      <div class="radio-row"><input type="radio" name="digitalSkill" value="4"> <label style="margin:0;font-weight:400;">4</label></div>
+      <div class="radio-row"><input type="radio" name="digitalSkill" value="5 - Pokročilý"> <label style="margin:0;font-weight:400;">5 – Pokročilý</label></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>5. Aký je hlavný dôvod vašej účasti?</legend>
+      <div class="radio-row"><input type="radio" name="reason" value="Zvedavosť" required> <label style="margin:0;font-weight:400;">Zvedavosť</label></div>
+      <div class="radio-row"><input type="radio" name="reason" value="Obava z podvodov"> <label style="margin:0;font-weight:400;">Obava z podvodov</label></div>
+      <div class="radio-row"><input type="radio" name="reason" value="Zlepšiť finančné rozhodnutia"> <label style="margin:0;font-weight:400;">Chcem zlepšiť svoje finančné rozhodnutia</label></div>
+      <div class="radio-row"><input type="radio" name="reason" value="Odporučil mi niekto"> <label style="margin:0;font-weight:400;">Odporučil mi to niekto</label></div>
+      <div class="radio-row"><input type="radio" name="reason" value="Iné"> <label style="margin:0;font-weight:400;">Iné</label></div>
+    </fieldset>
+
+    <label class="checkbox-row" style="font-weight:400;">
+      <input type="checkbox" id="gdpr" required />
+      Súhlasím so spracovaním mojich osobných údajov za účelom registrácie a vyhodnotenia workshopu. *
+    </label>
+
+    <div id="formError" class="alert error" style="display:none;"></div>
+
+    <div class="actions">
+      <button type="submit" id="submitBtn">Záväzne sa prihlásiť</button>
+    </div>
+  </form>
+
+  <div class="card" id="successCard" style="display:none;">
+    <h2>✅ Ste prihlásený/á!</h2>
+    <p>Toto je váš osobný <strong>5-miestny kód</strong>. Uschovajte si ho – budete ho potrebovať na prihlásenie do vstupného a výstupného kvízu v deň workshopu.</p>
+    <div class="code-display" id="codeOut"></div>
+    <div class="qr-box" id="qrBox"></div>
+    <p id="successTermInfo" style="color:var(--muted)"></p>
+    <div class="actions">
+      <button id="icsBtn" class="secondary">📅 Pridať do kalendára</button>
+      <a class="btn" href="kviz.html">Prejsť na kvíz →</a>
+    </div>
+  </div>
+
+</div>
+
+<footer class="site-footer">
+  Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“ · Registrácia beží cez Firebase.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script type="module" src="js/booking.js"></script>
+</body>
+</html>

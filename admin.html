@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin – AI a finančné rozhodnutia</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<script>
+  (function(){ var t = localStorage.getItem("theme") || "light"; document.documentElement.setAttribute("data-theme", t); })();
+</script>
+
+<header class="topbar">
+  <div class="brand">🤖💶 AI & Financie <span class="badge">admin</span></div>
+  <nav>
+    <a href="index.html">Registrácia</a>
+    <a href="kviz.html">Kvíz</a>
+    <a href="#" id="logoutLink" style="display:none;">Odhlásiť sa</a>
+  </nav>
+  <button class="theme-toggle" id="themeBtn" title="Prepnúť tému">🌙</button>
+</header>
+
+<div class="container">
+
+  <div class="card" id="loginCard" style="max-width:420px; margin-inline:auto;">
+    <h2>Prihlásenie do admin zóny</h2>
+    <label for="adminEmail">Email</label>
+    <input type="email" id="adminEmail" autocomplete="username" />
+    <label for="adminPass">Heslo</label>
+    <input type="text" id="adminPass" autocomplete="current-password" style="-webkit-text-security: disc;" />
+    <div id="loginError" class="alert error" style="display:none;"></div>
+    <div class="actions">
+      <button id="loginBtn">Prihlásiť sa</button>
+    </div>
+    <p style="color:var(--muted); font-size:.8rem; margin-top:14px;">Účet vytvoríte vo Firebase Console → Authentication → Users. Pozri README.md.</p>
+  </div>
+
+  <div id="dashboard" style="display:none;">
+
+    <div class="tabs">
+      <button class="active" data-tab="terms">📅 Termíny</button>
+      <button data-tab="registrations">👥 Prihlásení</button>
+      <button data-tab="stats">📊 Štatistiky</button>
+    </div>
+
+    <div id="tab-terms" class="tab-panel">
+      <div class="card">
+        <h2>Nastavenie termínov workshopu</h2>
+        <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb.</p>
+        <div id="termsEditor"></div>
+        <div class="actions">
+          <button id="saveTermsBtn">💾 Uložiť termíny</button>
+        </div>
+        <div id="termsSaveMsg" class="alert success" style="display:none;">Termíny boli uložené.</div>
+      </div>
+    </div>
+
+    <div id="tab-registrations" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Zoznam prihlásených</h2>
+        <div class="search-row">
+          <input type="text" id="searchInput" placeholder="Hľadať podľa mena, mesta, emailu alebo kódu…" />
+          <select id="termFilter"><option value="">Všetky termíny</option></select>
+          <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table id="regTable">
+            <thead>
+              <tr>
+                <th>Kód</th><th>Meno</th><th>Mesto</th><th>Email</th><th>Telefón</th><th>Termín</th>
+                <th>Zdroj</th><th>Zariadenia</th><th>Skúsenosti AI</th><th>Dôvod</th>
+                <th>Vstup.</th><th>Výst.</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="regTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-stats" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Prehľad</h2>
+        <div class="stat-grid" id="statBoxes"></div>
+      </div>
+      <div class="card">
+        <h3>Priemerný výsledok kvízu (vstup vs. výstup)</h3>
+        <canvas id="scoreChart" height="120"></canvas>
+      </div>
+      <div class="card">
+        <h3>Obsadenosť termínov</h3>
+        <canvas id="capacityChart" height="120"></canvas>
+      </div>
+      <div class="card">
+        <h3>Skúsenosti účastníkov s AI</h3>
+        <canvas id="aiExpChart" height="120"></canvas>
+      </div>
+      <div class="card">
+        <h3>Odkiaľ sa účastníci dozvedeli o workshope</h3>
+        <canvas id="sourceChart" height="120"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="site-footer">Admin zóna · chránené cez Firebase Authentication</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>
