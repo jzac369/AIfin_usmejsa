@@ -16,9 +16,9 @@
 // ============================================================
 
 export const emailjsConfig = {
-  serviceId: "VLOZ_SEM_SERVICE_ID",
-  templateId: "VLOZ_SEM_TEMPLATE_ID",
-  publicKey: "VLOZ_SEM_PUBLIC_KEY"
+  serviceId: "service_vyijjje",
+  templateId: "template_c9lio3o",
+  publicKey: "eOd4Q1os_TN-pSs2S"
 };
 
 export function isEmailjsConfigured() {
