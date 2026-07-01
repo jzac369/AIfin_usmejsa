@@ -11,18 +11,16 @@
   (function(){ var t = localStorage.getItem("theme") || "light"; document.documentElement.setAttribute("data-theme", t); })();
 </script>
 
-<header class="topbar">
+<header class="topbar" id="topHeader">
   <div class="brand">🤖💶 AI & Financie <span class="badge">admin</span></div>
   <nav>
     <a href="index.html">Registrácia</a>
     <a href="kviz.html">Kvíz</a>
-    <a href="#" id="logoutLink" style="display:none;">Odhlásiť sa</a>
   </nav>
   <button class="theme-toggle" id="themeBtn" title="Prepnúť tému">🌙</button>
 </header>
 
-<div class="container">
-
+<div class="container" id="loginContainer">
   <div class="card" id="loginCard" style="max-width:420px; margin-inline:auto;">
     <h2>Prihlásenie do admin zóny</h2>
     <label for="adminEmail">Email</label>
@@ -35,35 +33,40 @@
     </div>
     <p style="color:var(--muted); font-size:.8rem; margin-top:14px;">Účet vytvoríte vo Firebase Console → Authentication → Users. Pozri README.md.</p>
   </div>
+</div>
 
-  <div id="dashboard" style="display:none;">
+<div id="dashboard" class="admin-layout" style="display:none;">
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-brand">🤖💶 AI &amp; Financie</div>
+
+    <div class="admin-nav-group">
+      <div class="admin-nav-label">Prehľad</div>
+      <button class="admin-nav-item active" data-tab="registrations"><span>👥</span> Prihlásení</button>
+      <button class="admin-nav-item" data-tab="results"><span>🧾</span> Výsledky</button>
+      <button class="admin-nav-item" data-tab="stats"><span>📊</span> Štatistiky</button>
+      <button class="admin-nav-item" data-tab="log"><span>📜</span> Log</button>
+    </div>
+
+    <div class="admin-nav-group">
+      <div class="admin-nav-label">Nastavenia</div>
+      <button class="admin-nav-item" data-tab="terms"><span>📅</span> Termíny</button>
+      <button class="admin-nav-item" data-tab="questions"><span>❓</span> Otázky</button>
+      <button class="admin-nav-item" data-tab="email"><span>✉️</span> Email</button>
+      <button class="admin-nav-item" data-tab="landing"><span>🌐</span> Landing page</button>
+    </div>
+
+    <div class="admin-sidebar-footer">
+      <button class="theme-toggle" id="themeBtnSidebar" title="Prepnúť tému">🌙</button>
+      <a href="#" id="logoutLink">↩️ Odhlásiť sa</a>
+    </div>
+  </aside>
+
+  <main class="admin-main">
 
     <div id="alertsPanel"></div>
 
-    <div class="tabs" id="mainTabs">
-      <button class="active" data-tab="terms">📅 Termíny</button>
-      <button data-tab="registrations">👥 Prihlásení</button>
-      <button data-tab="questions">❓ Otázky</button>
-      <button data-tab="results">🧾 Výsledky</button>
-      <button data-tab="email">✉️ Email</button>
-      <button data-tab="landing">🌐 Landing page</button>
-      <button data-tab="log">📜 Log</button>
-      <button data-tab="stats">📊 Štatistiky</button>
-    </div>
-
-    <div id="tab-terms" class="tab-panel">
-      <div class="card">
-        <h2>Nastavenie termínov workshopu</h2>
-        <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb, počet náhradníkov (čakacia listina) si vieš zvoliť pre každý termín samostatne.</p>
-        <div id="termsEditor"></div>
-        <div class="actions">
-          <button id="saveTermsBtn">💾 Uložiť termíny</button>
-        </div>
-        <div id="termsSaveMsg" class="alert success" style="display:none;">Termíny boli uložené.</div>
-      </div>
-    </div>
-
-    <div id="tab-registrations" class="tab-panel" style="display:none;">
+    <div id="tab-registrations" class="tab-panel">
       <div class="card">
         <h2>Zoznam prihlásených</h2>
         <div class="search-row">
@@ -88,62 +91,6 @@
           <button id="exportResultsCsvBtn" class="secondary">⬇️ Export výsledkov CSV</button>
         </div>
         <div class="table-wrap" id="resultsTableContainer" style="margin-top:14px;"></div>
-      </div>
-    </div>
-
-    <div id="tab-email" class="tab-panel" style="display:none;">
-      <div class="card">
-        <h2>Text potvrdzovacieho emailu</h2>
-        <p style="color:var(--muted)">Odosielanie beží cez bezplatnú službu EmailJS (nastavenie v <code>js/emailjs-config.js</code>, návod v README). Dostupné premenné: <code>{{meno}}</code>, <code>{{priezvisko}}</code>, <code>{{termin}}</code>, <code>{{kod}}</code>.</p>
-        <label for="emailSubjectInput">Predmet emailu</label>
-        <input type="text" id="emailSubjectInput" />
-        <label for="emailBodyInput">Text emailu</label>
-        <textarea id="emailBodyInput" rows="10"></textarea>
-        <div class="actions">
-          <button id="saveEmailBtn">💾 Uložiť text emailu</button>
-        </div>
-        <div id="emailSaveMsg" class="alert success" style="display:none;">Text emailu bol uložený.</div>
-      </div>
-    </div>
-
-    <div id="tab-landing" class="tab-panel" style="display:none;">
-      <div class="card">
-        <h2>Obsah úvodnej stránky</h2>
-        <p style="color:var(--muted)">Tento text sa zobrazuje na hlavnej registračnej stránke a má za cieľ prilákať ľudí na workshop.</p>
-        <label for="heroTitleInput">Hlavný nadpis</label>
-        <input type="text" id="heroTitleInput" />
-        <label for="heroSubtitleInput">Podnadpis</label>
-        <textarea id="heroSubtitleInput" rows="3"></textarea>
-        <label for="heroPromoInput">Propagačný text (voliteľné, zvýrazňuje naliehavosť/benefity)</label>
-        <textarea id="heroPromoInput" rows="4"></textarea>
-        <div class="actions">
-          <button id="saveLandingBtn">💾 Uložiť obsah stránky</button>
-        </div>
-        <div id="landingSaveMsg" class="alert success" style="display:none;">Obsah bol uložený.</div>
-      </div>
-    </div>
-
-    <div id="tab-log" class="tab-panel" style="display:none;">
-      <div class="card">
-        <h2>Interný log zmien</h2>
-        <p style="color:var(--muted)">Záznam všetkých úprav a vymazaní registrácií vrátane emailu admina, ktorý zmenu vykonal.</p>
-        <div class="table-wrap" id="auditLogContainer"></div>
-      </div>
-    </div>
-
-    <div id="tab-questions" class="tab-panel" style="display:none;">
-      <div class="card">
-        <h2>Editácia otázok kvízu</h2>
-        <p style="color:var(--muted)">Uprav znenie otázok a možností pre vstupný a výstupný kvíz (8 otázok, 4 možnosti). Označ, ktorá možnosť je správna.</p>
-        <div class="tabs">
-          <button class="active" data-qset="entry">Vstupný kvíz</button>
-          <button data-qset="exit">Výstupný kvíz</button>
-        </div>
-        <div id="questionsEditor"></div>
-        <div class="actions">
-          <button id="saveQuestionsBtn">💾 Uložiť otázky</button>
-        </div>
-        <div id="questionsSaveMsg" class="alert success" style="display:none;">Otázky boli uložené.</div>
       </div>
     </div>
 
@@ -183,12 +130,80 @@
       </div>
     </div>
 
-  </div>
+    <div id="tab-log" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Interný log zmien</h2>
+        <p style="color:var(--muted)">Záznam všetkých úprav a vymazaní registrácií vrátane emailu admina, ktorý zmenu vykonal.</p>
+        <div class="table-wrap" id="auditLogContainer"></div>
+      </div>
+    </div>
+
+    <div id="tab-terms" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Nastavenie termínov workshopu</h2>
+        <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb, počet náhradníkov (čakacia listina) si vieš zvoliť pre každý termín samostatne.</p>
+        <div id="termsEditor"></div>
+        <div class="actions">
+          <button id="saveTermsBtn">💾 Uložiť termíny</button>
+        </div>
+        <div id="termsSaveMsg" class="alert success" style="display:none;">Termíny boli uložené.</div>
+      </div>
+    </div>
+
+    <div id="tab-questions" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Editácia otázok kvízu</h2>
+        <p style="color:var(--muted)">Uprav znenie otázok a možností pre vstupný a výstupný kvíz (8 otázok, 4 možnosti). Označ, ktorá možnosť je správna.</p>
+        <div class="tabs">
+          <button class="active" data-qset="entry">Vstupný kvíz</button>
+          <button data-qset="exit">Výstupný kvíz</button>
+        </div>
+        <div id="questionsEditor"></div>
+        <div class="actions">
+          <button id="saveQuestionsBtn">💾 Uložiť otázky</button>
+        </div>
+        <div id="questionsSaveMsg" class="alert success" style="display:none;">Otázky boli uložené.</div>
+      </div>
+    </div>
+
+    <div id="tab-email" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Text potvrdzovacieho emailu</h2>
+        <p style="color:var(--muted)">Odosielanie beží cez bezplatnú službu EmailJS (nastavenie v <code>js/emailjs-config.js</code>, návod v README). Dostupné premenné: <code>{{meno}}</code>, <code>{{priezvisko}}</code>, <code>{{termin}}</code>, <code>{{kod}}</code>.</p>
+        <label for="emailSubjectInput">Predmet emailu</label>
+        <input type="text" id="emailSubjectInput" />
+        <label for="emailBodyInput">Text emailu</label>
+        <textarea id="emailBodyInput" rows="10"></textarea>
+        <div class="actions">
+          <button id="saveEmailBtn">💾 Uložiť text emailu</button>
+        </div>
+        <div id="emailSaveMsg" class="alert success" style="display:none;">Text emailu bol uložený.</div>
+      </div>
+    </div>
+
+    <div id="tab-landing" class="tab-panel" style="display:none;">
+      <div class="card">
+        <h2>Obsah úvodnej stránky</h2>
+        <p style="color:var(--muted)">Tento text sa zobrazuje na hlavnej registračnej stránke a má za cieľ prilákať ľudí na workshop.</p>
+        <label for="heroTitleInput">Hlavný nadpis</label>
+        <input type="text" id="heroTitleInput" />
+        <label for="heroSubtitleInput">Podnadpis</label>
+        <textarea id="heroSubtitleInput" rows="3"></textarea>
+        <label for="heroPromoInput">Propagačný text (voliteľné, zvýrazňuje naliehavosť/benefity)</label>
+        <textarea id="heroPromoInput" rows="4"></textarea>
+        <div class="actions">
+          <button id="saveLandingBtn">💾 Uložiť obsah stránky</button>
+        </div>
+        <div id="landingSaveMsg" class="alert success" style="display:none;">Obsah bol uložený.</div>
+      </div>
+    </div>
+
+  </main>
 </div>
 
 <div id="attendancePrintArea"></div>
 
-<footer class="site-footer">Admin zóna · chránené cez Firebase Authentication</footer>
+<footer class="site-footer no-print" id="siteFooter">Admin zóna · chránené cez Firebase Authentication</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script type="module" src="js/admin.js"></script>

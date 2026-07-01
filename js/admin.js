@@ -11,6 +11,7 @@ import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 
 applyStoredTheme();
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+document.getElementById("themeBtnSidebar").addEventListener("click", toggleTheme);
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -58,25 +59,28 @@ document.getElementById("logoutLink").addEventListener("click", (e) => {
 });
 
 onAuthStateChanged(auth, (user) => {
-  const loginCard = document.getElementById("loginCard");
+  const loginContainer = document.getElementById("loginContainer");
+  const topHeader = document.getElementById("topHeader");
   const dashboard = document.getElementById("dashboard");
-  const logoutLink = document.getElementById("logoutLink");
+  const siteFooter = document.getElementById("siteFooter");
   if (user) {
-    loginCard.style.display = "none";
-    dashboard.style.display = "block";
-    logoutLink.style.display = "inline";
+    loginContainer.style.display = "none";
+    topHeader.style.display = "none";
+    siteFooter.style.display = "none";
+    dashboard.style.display = "flex";
     loadAll();
   } else {
-    loginCard.style.display = "block";
+    loginContainer.style.display = "block";
+    topHeader.style.display = "flex";
+    siteFooter.style.display = "block";
     dashboard.style.display = "none";
-    logoutLink.style.display = "none";
   }
 });
 
-// ---------- TABS ----------
-document.querySelectorAll("#mainTabs button").forEach((btn) => {
+// ---------- NAVIGATION (sidebar) ----------
+document.querySelectorAll(".admin-nav-item").forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll("#mainTabs button").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".admin-nav-item").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     document.querySelectorAll(".tab-panel").forEach((p) => (p.style.display = "none"));
     document.getElementById(`tab-${btn.dataset.tab}`).style.display = "block";

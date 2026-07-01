@@ -43,6 +43,99 @@ a { color: var(--primary); }
   padding: 24px 20px 64px;
 }
 
+/* ---------- Admin sidebar layout ---------- */
+.admin-layout {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.admin-sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: #171b29;
+  color: #cdd3e6;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 0;
+}
+
+.admin-sidebar-brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+  padding: 4px 20px 20px;
+}
+
+.admin-nav-group { margin-bottom: 18px; }
+
+.admin-nav-label {
+  text-transform: uppercase;
+  font-size: .7rem;
+  letter-spacing: .06em;
+  color: #6b7392;
+  padding: 0 20px 8px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: #cdd3e6;
+  text-align: left;
+  padding: 10px 20px;
+  font-size: .9rem;
+  border-radius: 0;
+  cursor: pointer;
+}
+.admin-nav-item span { font-size: 1rem; }
+.admin-nav-item:hover { background: rgba(255,255,255,.06); }
+.admin-nav-item.active {
+  background: rgba(61,90,254,.18);
+  border-left-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.admin-sidebar-footer {
+  margin-top: auto;
+  padding: 14px 20px 4px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-sidebar-footer a {
+  color: #cdd3e6;
+  text-decoration: none;
+  font-size: .85rem;
+}
+.admin-sidebar-footer a:hover { color: #fff; }
+.admin-sidebar-footer .theme-toggle { background: rgba(255,255,255,.12); }
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px 64px;
+  background: var(--bg);
+}
+
+@media (max-width: 780px) {
+  .admin-layout { flex-direction: column; }
+  .admin-sidebar { width: 100%; min-width: 0; flex-direction: row; flex-wrap: wrap; padding: 10px; }
+  .admin-sidebar-brand { display: none; }
+  .admin-nav-group { display: flex; flex-wrap: wrap; margin-bottom: 6px; }
+  .admin-nav-label { display: none; }
+  .admin-nav-item { width: auto; border-left: none; border-radius: 8px; padding: 8px 12px; }
+  .admin-nav-item.active { border-left: none; }
+  .admin-sidebar-footer { margin-top: 6px; border-top: none; width: 100%; }
+  .admin-main { padding: 20px 16px 48px; }
+}
+
 header.topbar {
   display: flex;
   align-items: center;
