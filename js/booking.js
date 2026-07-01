@@ -1,5 +1,5 @@
 import { firebaseConfig } from "./firebase-config.js";
-import { emailjsConfig, isEmailjsConfigured } from "./emailjs-config.js";
+import { initEmailjs, sendConfirmationEmail } from "./email.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, getDocs, doc, getDoc, runTransaction
@@ -25,9 +25,7 @@ wireOtherToggle("reasonOther", "reasonOtherText");
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-if (isEmailjsConfigured() && window.emailjs) {
-  window.emailjs.init({ publicKey: emailjsConfig.publicKey });
-}
+initEmailjs();
 
 let terms = [];
 let selectedTermId = null;
@@ -227,7 +225,8 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
       finalStatus = status;
     });
 
-    sendConfirmationEmail({ firstName, lastName, email, code: finalCode, status: finalStatus }).catch(() => {});
+    const registeredTerm = terms.find((t) => t.id === selectedTermId);
+    sendConfirmationEmail(db, { firstName, lastName, email, code: finalCode, status: finalStatus }, registeredTerm).catch(() => {});
     showSuccess(finalCode, finalStatus);
   } catch (err) {
     errBox.textContent = err.message || "Nastala chyba pri registrácii. Skúste to prosím znova.";
@@ -238,37 +237,6 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
     submitBtn.textContent = "Záväzne sa prihlásiť";
   }
 });
-
-const DEFAULT_EMAIL_TEMPLATE = {
-  subject: "Potvrdenie registrácie – Workshop AI a financie",
-  body: "Dobrý deň {{meno}},\n\nďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.\n\nVáš termín: {{termin}}\nVáš prihlasovací kód (uschovajte si ho): {{kod}}\n\nTešíme sa na Vás!"
-};
-
-async function sendConfirmationEmail({ firstName, lastName, email, code, status }) {
-  if (!isEmailjsConfigured() || !window.emailjs) return;
-  const term = terms.find((t) => t.id === selectedTermId);
-  const templateSnap = await getDoc(doc(db, "settings", "emailTemplate"));
-  const tpl = templateSnap.exists() ? templateSnap.data() : DEFAULT_EMAIL_TEMPLATE;
-  const replacements = {
-    "{{meno}}": firstName,
-    "{{priezvisko}}": lastName,
-    "{{termin}}": term ? formatDateTime(term.datetime) : "",
-    "{{kod}}": code
-  };
-  const fill = (text) => Object.entries(replacements).reduce((acc, [k, v]) => acc.split(k).join(v), text || "");
-
-  let subject = fill(tpl.subject || DEFAULT_EMAIL_TEMPLATE.subject);
-  let body = fill(tpl.body || DEFAULT_EMAIL_TEMPLATE.body);
-  if (status === "waitlist") {
-    body += "\n\n(Momentálne ste zaradený/á na náhradnú listinu, budeme Vás kontaktovať, ak sa uvoľní miesto.)";
-  }
-
-  await window.emailjs.send(emailjsConfig.serviceId, emailjsConfig.templateId, {
-    to_email: email,
-    subject,
-    message: body
-  });
-}
 
 function showSuccess(code, status) {
   document.getElementById("regForm").style.display = "none";

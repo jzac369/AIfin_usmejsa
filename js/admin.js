@@ -8,10 +8,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, applyStoredTheme, toggleTheme } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
+import { initEmailjs, sendConfirmationEmail } from "./email.js";
 
 applyStoredTheme();
 document.getElementById("themeBtn").addEventListener("click", toggleTheme);
 document.getElementById("themeBtnSidebar").addEventListener("click", toggleTheme);
+initEmailjs();
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -341,8 +343,10 @@ function openDetailPanel(tr, r) {
       </div>
       <label>Poznámka (viditeľná len v admin zóne)</label>
       <textarea class="admin-notes" placeholder="Interná poznámka...">${r.adminNotes || ""}</textarea>
+      <div id="resendEmailMsg" style="display:none; font-size:.82rem; margin-bottom:8px;"></div>
       <div class="actions">
         <button type="button" id="edit-save-btn">💾 Uložiť zmeny</button>
+        <button type="button" class="secondary resend-email-btn">📧 Poslať potvrdzujúci email</button>
         <button type="button" class="secondary transfer-btn">🔁 Presunúť na iný termín</button>
         <button type="button" class="secondary cancel-btn">🚫 Zrušiť registráciu</button>
         <button type="button" class="danger delete-btn">🗑️ Natrvalo vymazať</button>
@@ -351,6 +355,29 @@ function openDetailPanel(tr, r) {
   `;
   panelRow.appendChild(td);
   tr.after(panelRow);
+
+  panelRow.querySelector(".resend-email-btn").addEventListener("click", async (e) => {
+    const btn = e.target;
+    const msgBox = panelRow.querySelector("#resendEmailMsg");
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = "Odosielam…";
+    try {
+      const term = terms.find((t) => t.id === r.termId);
+      await sendConfirmationEmail(db, r, term);
+      msgBox.textContent = `✅ Email bol odoslaný na ${r.email}.`;
+      msgBox.style.color = "#106c53";
+      msgBox.style.display = "block";
+      await logAudit("email-resent", r.code, { email: r.email });
+    } catch (err) {
+      msgBox.textContent = `❌ ${err.message || "Odoslanie zlyhalo."}`;
+      msgBox.style.color = "#9c1c1f";
+      msgBox.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 
   let notesTimer;
   panelRow.querySelector(".admin-notes").addEventListener("input", (e) => {
@@ -523,7 +550,10 @@ function printAttendanceSheet(term, rows) {
 
   const landscapeStyle = document.createElement("style");
   landscapeStyle.id = "landscapePrintStyle";
-  landscapeStyle.textContent = "@page { size: landscape; }";
+  landscapeStyle.textContent = `
+    @page { size: landscape; margin: 12mm; }
+    html, body.printing-attendance { height: auto !important; min-height: 0 !important; }
+  `;
   document.head.appendChild(landscapeStyle);
   document.body.classList.add("printing-attendance");
 
@@ -602,6 +632,9 @@ function renderStats() {
   const exitScores = registrations.filter((r) => r.exitScore != null).map((r) => r.exitScore);
   const avg = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 
+  const pieOptions = { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 9 } } } } };
+  const pieColors = ["#3d5afe", "#00c2a8", "#f5a623", "#e5484d", "#8b9dff", "#6be7c4"];
+
   scoreChartInstance?.destroy();
   scoreChartInstance = new Chart(document.getElementById("scoreChart"), {
     type: "bar",
@@ -609,7 +642,7 @@ function renderStats() {
       labels: ["Vstupný kvíz", "Výstupný kvíz"],
       datasets: [{ label: "Priemerné skóre (z 8)", data: [avg(entryScores), avg(exitScores)], backgroundColor: ["#3d5afe", "#00c2a8"] }]
     },
-    options: { scales: { y: { beginAtZero: true, max: 8 } } }
+    options: { ...pieOptions, scales: { y: { beginAtZero: true, max: 8 } } }
   });
 
   capacityChartInstance?.destroy();
@@ -622,7 +655,7 @@ function renderStats() {
         { label: "Voľné", data: terms.map((t) => Math.max(0, (t.capacity || 10) - (t.booked || 0))), backgroundColor: "#e3e7f0" }
       ]
     },
-    options: { scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+    options: { ...pieOptions, scales: { x: { stacked: true, ticks: { font: { size: 8 } } }, y: { stacked: true, beginAtZero: true } } }
   });
 
   const countBy = (key) => {
@@ -637,9 +670,6 @@ function renderStats() {
     });
     return map;
   };
-
-  const pieOptions = { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 9 } } } } };
-  const pieColors = ["#3d5afe", "#00c2a8", "#f5a623", "#e5484d", "#8b9dff", "#6be7c4"];
 
   const aiExpMap = countBy("aiExperience");
   aiExpChartInstance?.destroy();

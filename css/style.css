@@ -503,10 +503,16 @@ footer.site-footer {
 #attendancePrintArea th { background: #eee; }
 
 @media print {
+  html:has(body.printing-attendance), body.printing-attendance {
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+  }
   body.printing-attendance > *:not(#attendancePrintArea) { display: none !important; }
   body.printing-attendance #attendancePrintArea {
     display: block;
     color: #000;
     background: #fff;
+    min-height: 0;
   }
 }
