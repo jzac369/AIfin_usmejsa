@@ -436,7 +436,7 @@ function renderTable() {
           📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
           <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${allRows.length} ${allRows.length === 1 ? "účastník" : allRows.length < 5 ? "účastníci" : "účastníkov"})</span>
         </h3>
-        <button class="secondary print-attendance-btn" type="button">🖨️ Prezenčná listina</button>
+        <button class="btn-print print-attendance-btn" type="button">🖨️ Prezenčná listina</button>
       </div>
       <table>${tableHeadHtml}<tbody class="main-rows-body"></tbody></table>
     `;

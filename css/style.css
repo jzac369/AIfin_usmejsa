@@ -319,6 +319,15 @@ button.secondary { background: transparent; color: var(--primary); border: 1px s
 button.danger { background: var(--danger); }
 button:disabled { opacity: .5; cursor: not-allowed; }
 
+button.btn-print {
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+button.btn-print:hover { background: var(--bg); }
+[data-theme="dark"] button.btn-print:hover { background: #232a3d; }
+
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 
 .alert {
