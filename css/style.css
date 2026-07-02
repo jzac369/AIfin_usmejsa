@@ -278,6 +278,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); }
 }
 .rte-editable:focus { outline: 2px solid var(--primary); }
 
+.option-edit-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+@media (max-width: 480px) {
+  .option-edit-row { flex-direction: column; align-items: stretch; }
+  .option-edit-row button { width: 100%; }
+}
+
 .checkbox-row, .radio-row {
   display: flex;
   align-items: center;
@@ -547,4 +553,80 @@ footer.site-footer {
     background: #fff;
     min-height: 0;
   }
+}
+
+/* ---------- Responsive tables (mobile/tablet) ---------- */
+@media (max-width: 720px) {
+  .table-wrap table thead { display: none; }
+  .table-wrap table, .table-wrap table tbody, .table-wrap table tr, .table-wrap table td {
+    display: block;
+    width: 100%;
+  }
+  .table-wrap table { margin-bottom: 14px; }
+  .table-wrap table tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 6px 12px;
+    background: var(--card-bg);
+  }
+  .table-wrap table tr:hover td { background: transparent; }
+  .table-wrap table td {
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: right;
+    white-space: normal;
+  }
+  .table-wrap table td:last-child { border-bottom: none; }
+  .table-wrap table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
+    font-size: .75rem;
+    text-transform: uppercase;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .table-wrap table td:empty { display: none; }
+  .table-wrap table td input.admin-notes,
+  .table-wrap table td textarea { text-align: left; }
+}
+
+/* ---------- General mobile/tablet polish ---------- */
+@media (max-width: 720px) {
+  .hero { padding: 32px 12px 24px; }
+  .hero h1 { font-size: 1.5rem; }
+  .card { padding: 18px; }
+  .code-display { font-size: 1.6rem; letter-spacing: .2em; padding: 14px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .pie-grid { grid-template-columns: 1fr; }
+  .search-row { flex-direction: column; align-items: stretch; }
+  .search-row input, .search-row select, .search-row button { width: 100%; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .actions button, .actions .btn { width: 100%; text-align: center; }
+  .row-actions { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 480px) {
+  .term-option h3 { font-size: .95rem; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .certificate { padding: 22px; }
+  .certificate .name { font-size: 1.4rem; }
+}
+
+/* Sidebar nav on narrow screens: horizontally scrollable single row
+   instead of wrapping to many lines, so it doesn't eat the whole viewport. */
+@media (max-width: 780px) {
+  .admin-nav-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .admin-nav-item { white-space: nowrap; }
+}
+
+@media (max-width: 900px) and (min-width: 721px) {
+  .admin-main { padding: 24px; }
+  .pie-grid { grid-template-columns: repeat(2, 1fr); }
 }

@@ -389,15 +389,15 @@ function renderTable() {
         ? ` <span title="Pokus o zmenu/zrušenie menej ako 48h pred workshopom bol zablokovaný">⚠️</span>`
         : "";
       tr.innerHTML = `
-        <td><strong>${r.code}</strong></td>
-        <td>${r.fullName}</td>
-        <td>${r.email}</td>
-        <td>${r.phone}</td>
-        <td>${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
-        <td>${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
-        <td><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span>${warningIcon}</td>
-        <td><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
-        <td><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
+        <td data-label="Kód"><strong>${r.code}</strong></td>
+        <td data-label="Meno">${r.fullName}</td>
+        <td data-label="Email">${r.email}</td>
+        <td data-label="Telefón">${r.phone}</td>
+        <td data-label="Vstup.">${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
+        <td data-label="Výst.">${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
+        <td data-label="Stav"><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span>${warningIcon}</td>
+        <td data-label="Prišiel"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
+        <td data-label=""><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
       `;
 
       tr.querySelector(".attended-check").addEventListener("change", async (e) => {
@@ -744,11 +744,11 @@ function renderResultsTable() {
     }
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><strong>${r.code}</strong></td>
-      <td>${r.fullName}</td>
-      <td>${entry != null ? `${entry}/${entryTotal} (${entryPct} %)` : "–"}</td>
-      <td>${exit != null ? `${exit}/${exitTotal} (${exitPct} %)` : "–"}</td>
-      <td style="font-weight:700; color:${diffColor || "inherit"};">${diffText}</td>
+      <td data-label="Kód"><strong>${r.code}</strong></td>
+      <td data-label="Meno">${r.fullName}</td>
+      <td data-label="Vstupný kvíz">${entry != null ? `${entry}/${entryTotal} (${entryPct} %)` : "–"}</td>
+      <td data-label="Výstupný kvíz">${exit != null ? `${exit}/${exitTotal} (${exitPct} %)` : "–"}</td>
+      <td data-label="Zmena" style="font-weight:700; color:${diffColor || "inherit"};">${diffText}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -919,9 +919,7 @@ function renderQuestionsEditor() {
       optLabel.style.fontWeight = "400";
       optLabel.innerHTML = `Možnosť ${oi + 1} ${oi === q.correct ? '<span class="badge-pill ok">správna</span>' : ""}`;
       const row = document.createElement("div");
-      row.style.display = "flex";
-      row.style.gap = "8px";
-      row.style.alignItems = "center";
+      row.className = "option-edit-row";
 
       const optInput = document.createElement("input");
       optInput.type = "text";
@@ -1060,10 +1058,10 @@ function renderMaterialsList() {
     <tbody>
       ${materials.map((m) => `
         <tr>
-          <td>${m.title}</td>
-          <td>${m.filename || ""}</td>
-          <td>${m.sizeBytes ? Math.round(m.sizeBytes / 1024) + " KB" : ""}</td>
-          <td><button type="button" class="danger remove-material-btn" data-id="${m.id}">🗑️ Vymazať</button></td>
+          <td data-label="Názov">${m.title}</td>
+          <td data-label="Súbor">${m.filename || ""}</td>
+          <td data-label="Veľkosť">${m.sizeBytes ? Math.round(m.sizeBytes / 1024) + " KB" : ""}</td>
+          <td data-label=""><button type="button" class="danger remove-material-btn" data-id="${m.id}">🗑️ Vymazať</button></td>
         </tr>
       `).join("")}
     </tbody>
@@ -1179,10 +1177,10 @@ async function loadAuditLog() {
     <tbody>
       ${entries.slice(0, 300).map((e) => `
         <tr${e.action === "blocked-change-attempt" ? ' style="background:rgba(229,72,77,.08);"' : ""}>
-          <td>${e.timestamp ? new Date(e.timestamp).toLocaleString("sk-SK") : ""}</td>
-          <td>${e.adminEmail || "–"}</td>
-          <td>${e.code || "–"}</td>
-          <td>${describeAuditEntry(e)}</td>
+          <td data-label="Kedy">${e.timestamp ? new Date(e.timestamp).toLocaleString("sk-SK") : ""}</td>
+          <td data-label="Vykonal">${e.adminEmail || "–"}</td>
+          <td data-label="Kód">${e.code || "–"}</td>
+          <td data-label="Čo sa stalo">${describeAuditEntry(e)}</td>
         </tr>
       `).join("")}
     </tbody>

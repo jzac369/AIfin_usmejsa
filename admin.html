@@ -260,10 +260,10 @@
         <h2>Materiály na stiahnutie</h2>
         <p style="color:var(--muted)">Nahraté súbory uvidia všetci účastníci po prihlásení sa svojím kódom. Kvôli bezplatnému plánu (bez Firebase Storage) je limit veľkosti súboru cca <strong>700 KB</strong> — vhodné pre kratšie PDF s malým počtom obrázkov.</p>
 
-        <div style="display:grid; grid-template-columns:2fr 2fr auto; gap:0 16px; align-items:end;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:0 16px; align-items:end;">
           <div><label>Názov materiálu</label><input type="text" id="newMaterialTitle" placeholder="napr. Brožúra – AI a financie" /></div>
           <div><label>Súbor</label><input type="file" id="newMaterialFile" /></div>
-          <button type="button" id="uploadMaterialBtn" style="height:42px;">⬆️ Nahrať</button>
+          <button type="button" id="uploadMaterialBtn" style="height:42px; margin-bottom:14px;">⬆️ Nahrať</button>
         </div>
         <div id="materialsUploadError" class="alert error" style="display:none;"></div>
 
