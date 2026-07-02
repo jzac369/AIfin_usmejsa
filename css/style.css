@@ -484,6 +484,13 @@ tr.row-waitlist td { background: rgba(61,90,254,.08); }
 [data-theme="dark"] .badge-pill.ok { background: #12352c; color: #6be7c4; }
 [data-theme="dark"] .badge-pill.pending { background: #3a2c0d; color: #ffcf6b; }
 
+/* Stav registrácie (potvrdená/náhradník) - úmyselne INÉ farby ako zelená
+   "ok" značka, aby sa nezamieňali so zeleným zvýraznením "oba kvízy hotové". */
+.badge-pill.status-confirmed { background: #e3e7f0; color: #3d4a6b; }
+.badge-pill.status-waitlist { background: #e0e6f5; color: #3d4a6b; }
+[data-theme="dark"] .badge-pill.status-confirmed { background: #2a3145; color: #cdd3e6; }
+[data-theme="dark"] .badge-pill.status-waitlist { background: #2a3358; color: #b9c3ff; }
+
 .search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .search-row input { flex: 1; min-width: 200px; }
 

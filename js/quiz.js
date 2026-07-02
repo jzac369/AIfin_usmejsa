@@ -154,8 +154,9 @@ function showWelcome() {
 
   const badges = document.getElementById("statusBadges");
   const statusLabel = registration.status === "cancelled" ? "zrušená" : registration.status === "waitlist" ? "náhradník" : "potvrdená";
+  const statusBadgeClass = registration.status === "cancelled" ? "pending" : registration.status === "waitlist" ? "status-waitlist" : "status-confirmed";
   badges.innerHTML = `
-    <span class="badge-pill ${registration.status === "cancelled" ? "pending" : "ok"}">Registrácia: ${statusLabel}</span>
+    <span class="badge-pill ${statusBadgeClass}">Registrácia: ${statusLabel}</span>
     &nbsp;
     <span class="badge-pill ${registration.entryQuizDone ? "ok" : "pending"}">Vstupný kvíz: ${registration.entryQuizDone ? "hotový" : "čaká"}</span>
     &nbsp;

@@ -385,6 +385,7 @@ function renderTable() {
       const tr = document.createElement("tr");
       tr.className = rowClass(r);
       const statusLabel = r.status === "cancelled" ? "zrušená" : r.status === "waitlist" ? "náhradník" : "potvrdená";
+      const statusBadgeClass = r.status === "cancelled" ? "pending" : r.status === "waitlist" ? "status-waitlist" : "status-confirmed";
       const warningIcon = r.blockedChangeAttempt
         ? ` <span title="Pokus o zmenu/zrušenie menej ako 48h pred workshopom bol zablokovaný">⚠️</span>`
         : "";
@@ -395,7 +396,7 @@ function renderTable() {
         <td data-label="Telefón">${r.phone}</td>
         <td data-label="Vstup.">${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
         <td data-label="Výst.">${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
-        <td data-label="Stav"><span class="badge-pill ${r.status === "cancelled" ? "pending" : "ok"}">${statusLabel}</span>${warningIcon}</td>
+        <td data-label="Stav"><span class="badge-pill ${statusBadgeClass}">${statusLabel}</span>${warningIcon}</td>
         <td data-label="Prišiel"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
         <td data-label=""><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
       `;
