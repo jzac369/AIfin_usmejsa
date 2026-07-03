@@ -1,33 +1,5 @@
 :root {
-  --bg: #f4f6fb;
-  --card-bg: #ffffff;
-  --text: #1c2333;
-  --muted: #5b6478;
-  --primary: #3d5afe;
-  --primary-dark: #2c3fd0;
-  --accent: #00c2a8;
-  --danger: #e5484d;
-  --border: #e3e7f0;
-  --shadow: 0 8px 24px rgba(29, 39, 71, 0.08);
-  --radius: 14px;
-  font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
-}
-
-[data-theme="dark"] {
-  --bg: #10131c;
-  --card-bg: #1a1f2e;
-  --text: #eef1f8;
-  --muted: #9aa3ba;
-  --primary: #6f86ff;
-  --primary-dark: #8b9dff;
-  --accent: #22d3b8;
-  --border: #2a3145;
-  --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* ---------- Admin zone: dark "glass" theme (always on, not tied to the
-   light/dark toggle - the admin portal has its own fixed look) ---------- */
-body.admin-page {
+  /* Dark glass theme - default across the whole site */
   --bg: transparent;
   --card-bg: rgba(255, 255, 255, .035);
   --text: #eef1ff;
@@ -38,31 +10,65 @@ body.admin-page {
   --danger: #ff5c8a;
   --border: rgba(255, 255, 255, .09);
   --shadow: 0 20px 50px rgba(0, 0, 0, .45);
-  background: radial-gradient(circle at 20% 0%, #1c2450 0%, #0c1226 55%, #070a16 100%) fixed;
-  min-height: 100vh;
+  --input-bg: rgba(255, 255, 255, .06);
+  --radius: 14px;
+  color-scheme: dark;
+  font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
 }
-body.admin-page .card,
-body.admin-page .term-option,
-body.admin-page .stat-box,
-body.admin-page .alert-box,
-body.admin-page .waitlist-section {
+
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --card-bg: #ffffff;
+  --text: #1c2333;
+  --muted: #5b6478;
+  --primary: #3d5afe;
+  --primary-dark: #2c3fd0;
+  --accent: #00c2a8;
+  --danger: #e5484d;
+  --border: #e3e7f0;
+  --shadow: 0 8px 24px rgba(29, 39, 71, 0.08);
+  --input-bg: #f4f6fb;
+  color-scheme: light;
+}
+
+/* ---------- Glass look: default (dark) theme site-wide, flattened for light ---------- */
+body {
+  margin: 0;
+  color: var(--text);
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 0%, #1c2450 0%, #0c1226 55%, #070a16 100%) fixed;
+  transition: background .25s ease, color .25s ease;
+}
+[data-theme="light"] body { background: var(--bg); }
+
+.card, .term-option, .stat-box, .alert-box, .waitlist-section, .code-display {
   backdrop-filter: blur(16px);
 }
-body.admin-page h2 {
+[data-theme="light"] .card,
+[data-theme="light"] .term-option,
+[data-theme="light"] .stat-box,
+[data-theme="light"] .alert-box,
+[data-theme="light"] .waitlist-section,
+[data-theme="light"] .code-display {
+  backdrop-filter: none;
+}
+h2 {
   display: inline-block;
   background: linear-gradient(90deg, #8b96ff, #d98cff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-body.admin-page input, body.admin-page select, body.admin-page textarea {
-  background: rgba(255, 255, 255, .045);
+[data-theme="light"] h2 {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: var(--text);
 }
-body.admin-page .rte-editable { background: rgba(255, 255, 255, .045); }
-body.admin-page table tr:hover td { background: rgba(255, 255, 255, .03); }
-body.admin-page ::placeholder { color: #5c6494; }
+table tr:hover td { background: rgba(255, 255, 255, .03); }
+[data-theme="light"] table tr:hover td { background: rgba(61, 90, 254, .05); }
+::placeholder { color: var(--muted); }
 
-/* ---------- Toggle switch (used throughout the admin zone) ---------- */
+/* ---------- Toggle switch (used throughout the site) ---------- */
 .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .switch .slider {
@@ -85,14 +91,6 @@ body.admin-page ::placeholder { color: #5c6494; }
 .switch-row { display: flex; align-items: center; gap: 12px; }
 
 * { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  transition: background .25s ease, color .25s ease;
-  min-height: 100vh;
-}
 
 a { color: var(--primary); }
 
@@ -249,6 +247,10 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
   border-radius: 999px;
   width: 36px;
   height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   font-size: 16px;
 }
@@ -313,12 +315,12 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
 .term-option .capacity-bar.full > div { background: var(--danger); }
 
 label { display: block; font-weight: 500; font-size: .9rem; margin: 14px 0 6px; }
-input[type=text], input[type=email], input[type=tel], input[type=password], input[type=number], select, textarea {
+input[type=text], input[type=email], input[type=tel], input[type=password], input[type=number], input[type=datetime-local], select, textarea {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--input-bg);
   color: var(--text);
   font-size: .95rem;
 }
@@ -332,7 +334,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); }
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--input-bg);
   color: var(--text);
   font-size: .95rem;
   overflow-y: auto;
@@ -431,12 +433,12 @@ th, td {
 th { color: var(--muted); font-size: .78rem; text-transform: uppercase; white-space: nowrap; }
 tr:hover td { background: rgba(61,90,254,.05); }
 
-tr.row-done td { background: rgba(16,108,83,.08); }
-tr.row-partial td { background: rgba(147,101,10,.08); }
-tr.row-waitlist td { background: rgba(61,90,254,.08); }
-[data-theme="dark"] tr.row-done td { background: rgba(107,231,196,.08); }
-[data-theme="dark"] tr.row-partial td { background: rgba(255,207,107,.08); }
-[data-theme="dark"] tr.row-waitlist td { background: rgba(139,157,255,.1); }
+[data-theme="light"] tr.row-done td { background: rgba(16,108,83,.1); border-left: 3px solid #106c53; }
+[data-theme="light"] tr.row-partial td { background: rgba(147,101,10,.1); border-left: 3px solid #93650a; }
+[data-theme="light"] tr.row-waitlist td { background: rgba(61,90,254,.1); border-left: 3px solid #3d5afe; }
+tr.row-done td { background: rgba(94,230,168,.2); border-left: 3px solid #5ee6a8; }
+tr.row-partial td { background: rgba(255,196,92,.2); border-left: 3px solid #ffc45c; }
+tr.row-waitlist td { background: rgba(124,140,255,.22); border-left: 3px solid #7c8cff; }
 
 .waitlist-section {
   margin-top: 14px;

@@ -7,9 +7,12 @@ import {
 import {
   getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, generateCode } from "./util.js";
+import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, generateCode, applyStoredTheme, toggleTheme } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 import { initEmailjs, sendConfirmationEmail } from "./email.js";
+
+applyStoredTheme();
+document.getElementById("themeBtn").addEventListener("click", toggleTheme);
 
 initEmailjs();
 
@@ -429,7 +432,7 @@ function renderTable() {
         <td data-label="Vstup.">${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
         <td data-label="Výst.">${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
         <td data-label="Stav"><span class="badge-pill ${statusBadgeClass}">${statusLabel}</span>${warningIcon}</td>
-        <td data-label="Prišiel"><span class="switch"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /><span class="slider"></span></span></td>
+        <td data-label="Prišiel"><label class="switch"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /><span class="slider"></span></label></td>
         <td data-label=""><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
       `;
 
