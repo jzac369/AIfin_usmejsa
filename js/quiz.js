@@ -217,8 +217,8 @@ async function showTransferOptions() {
   const snap = await getDocs(collection(db, "terms"));
   const allTerms = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .filter((t) => t.id !== registration.termId)
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    .filter((t) => t.id !== registration.termId && t.visibleInCalendar !== false)
+    .sort((a, b) => new Date(a.datetime || 0) - new Date(b.datetime || 0));
 
   if (allTerms.length === 0) {
     container.innerHTML = "<p style='color:var(--muted)'>Nie sú dostupné žiadne iné termíny.</p>";

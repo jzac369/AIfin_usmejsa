@@ -25,6 +25,65 @@
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
+/* ---------- Admin zone: dark "glass" theme (always on, not tied to the
+   light/dark toggle - the admin portal has its own fixed look) ---------- */
+body.admin-page {
+  --bg: transparent;
+  --card-bg: rgba(255, 255, 255, .035);
+  --text: #eef1ff;
+  --muted: #9aa3d6;
+  --primary: #7c8cff;
+  --primary-dark: #6674e0;
+  --accent: #5ee6a8;
+  --danger: #ff5c8a;
+  --border: rgba(255, 255, 255, .09);
+  --shadow: 0 20px 50px rgba(0, 0, 0, .45);
+  background: radial-gradient(circle at 20% 0%, #1c2450 0%, #0c1226 55%, #070a16 100%) fixed;
+  min-height: 100vh;
+}
+body.admin-page .card,
+body.admin-page .term-option,
+body.admin-page .stat-box,
+body.admin-page .alert-box,
+body.admin-page .waitlist-section {
+  backdrop-filter: blur(16px);
+}
+body.admin-page h2 {
+  display: inline-block;
+  background: linear-gradient(90deg, #8b96ff, #d98cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+body.admin-page input, body.admin-page select, body.admin-page textarea {
+  background: rgba(255, 255, 255, .045);
+}
+body.admin-page .rte-editable { background: rgba(255, 255, 255, .045); }
+body.admin-page table tr:hover td { background: rgba(255, 255, 255, .03); }
+body.admin-page ::placeholder { color: #5c6494; }
+
+/* ---------- Toggle switch (used throughout the admin zone) ---------- */
+.switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch .slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background .15s;
+}
+.switch .slider::before {
+  content: "";
+  position: absolute;
+  width: 18px; height: 18px;
+  left: 3px; top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .15s;
+}
+.switch input:checked + .slider { background: var(--primary); }
+.switch input:checked + .slider::before { transform: translateX(18px); }
+.switch-row { display: flex; align-items: center; gap: 12px; }
+
 * { box-sizing: border-box; }
 
 body {
@@ -56,7 +115,9 @@ button, .btn { font-weight: 500; }
 .admin-sidebar {
   width: 240px;
   min-width: 240px;
-  background: #171b29;
+  background: rgba(255, 255, 255, .03);
+  border-right: 1px solid rgba(255, 255, 255, .07);
+  backdrop-filter: blur(20px);
   color: #cdd3e6;
   display: flex;
   flex-direction: column;
@@ -103,7 +164,7 @@ button, .btn { font-weight: 500; }
 .admin-nav-item span { font-size: 1rem; }
 .admin-nav-item:hover { background: rgba(255,255,255,.06); }
 .admin-nav-item.active {
-  background: rgba(61,90,254,.18);
+  background: linear-gradient(90deg, rgba(124,140,255,.18), transparent);
   border-left-color: var(--primary);
   color: #fff;
   font-weight: 600;

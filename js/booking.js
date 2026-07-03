@@ -70,7 +70,8 @@ async function loadTerms() {
   const snap = await getDocs(collection(db, "terms"));
   terms = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    .filter((t) => t.visibleInCalendar !== false)
+    .sort((a, b) => new Date(a.datetime || 0) - new Date(b.datetime || 0));
 
   document.getElementById("loadingCard").style.display = "none";
 

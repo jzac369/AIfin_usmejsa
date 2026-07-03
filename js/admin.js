@@ -7,20 +7,16 @@ import {
 import {
   getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, applyStoredTheme, toggleTheme, generateCode } from "./util.js";
+import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, generateCode } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 import { initEmailjs, sendConfirmationEmail } from "./email.js";
 
-applyStoredTheme();
-document.getElementById("themeBtn").addEventListener("click", toggleTheme);
-document.getElementById("themeBtnSidebar").addEventListener("click", toggleTheme);
 initEmailjs();
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const TERM_COUNT = 5;
 let terms = [];
 let registrations = [];
 
@@ -65,18 +61,15 @@ document.getElementById("logoutLink").addEventListener("click", (e) => {
 
 onAuthStateChanged(auth, (user) => {
   const loginContainer = document.getElementById("loginContainer");
-  const topHeader = document.getElementById("topHeader");
   const dashboard = document.getElementById("dashboard");
   const siteFooter = document.getElementById("siteFooter");
   if (user) {
     loginContainer.style.display = "none";
-    topHeader.style.display = "none";
     siteFooter.style.display = "none";
     dashboard.style.display = "flex";
     loadAll();
   } else {
     loginContainer.style.display = "block";
-    topHeader.style.display = "flex";
     siteFooter.style.display = "block";
     dashboard.style.display = "none";
   }
@@ -98,7 +91,7 @@ async function loadAll() {
     getDocs(collection(db, "terms")),
     getDocs(collection(db, "registrations"))
   ]);
-  terms = termsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  terms = termsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(a.datetime || 0) - new Date(b.datetime || 0));
   registrations = regsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
   renderAlerts();
@@ -154,27 +147,65 @@ function renderAlerts() {
 }
 
 // ---------- TERMS EDITOR ----------
+let editableTerms = [];
+
 function renderTermsEditor() {
+  editableTerms = terms.map((t) => ({ id: t.id, booked: t.booked || 0, waitlistCount: t.waitlistCount || 0 }));
+  renderTermsEditorList();
+}
+
+function renderTermsEditorList() {
   const editor = document.getElementById("termsEditor");
   editor.innerHTML = "";
-  for (let i = 0; i < TERM_COUNT; i++) {
-    const id = `term${i + 1}`;
-    const existing = terms.find((t) => t.id === id);
-    const localValue = existing?.datetime ? toLocalInputValue(existing.datetime) : "";
+  editableTerms.forEach((t, i) => {
+    const full = terms.find((x) => x.id === t.id);
+    const localValue = full?.datetime ? toLocalInputValue(full.datetime) : "";
+    const visible = full ? full.visibleInCalendar !== false : true;
     const wrap = document.createElement("div");
+    wrap.className = "card";
+    wrap.style.background = "rgba(255,255,255,.02)";
     wrap.style.marginBottom = "16px";
-    wrap.style.paddingBottom = "12px";
-    wrap.style.borderBottom = "1px solid var(--border)";
     wrap.innerHTML = `
-      <label>Termín ${i + 1} (kapacita: 10 osôb${existing ? ", obsadené: " + (existing.booked || 0) : ""})</label>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <label style="margin:0;">${t.id ? `Termín (obsadené: ${t.booked}/10)` : "Nový termín"}</label>
+        <button type="button" class="danger delete-term-btn" style="padding:4px 10px; font-size:.75rem;">🗑️ Vymazať</button>
+      </div>
       <input type="datetime-local" id="termInput${i}" value="${localValue}" />
       <label>Počet miest na čakacej listine (náhradníci)</label>
-      <input type="number" min="0" id="waitlistInput${i}" value="${existing?.waitlistCapacity || 0}" style="max-width:140px;" />
-      ${existing ? `<p style="color:var(--muted); font-size:.8rem; margin-top:4px;">Na čakacej listine momentálne: ${existing.waitlistCount || 0}/${existing.waitlistCapacity || 0}</p>` : ""}
+      <input type="number" min="0" id="waitlistInput${i}" value="${full?.waitlistCapacity || 0}" style="max-width:140px;" />
+      ${t.id ? `<p style="color:var(--muted); font-size:.8rem; margin:4px 0 10px;">Na čakacej listine momentálne: ${t.waitlistCount}/${full?.waitlistCapacity || 0}</p>` : ""}
+      <label class="switch-row" style="font-weight:400; margin-top:10px;">
+        <span class="switch"><input type="checkbox" id="visibleInput${i}" ${visible ? "checked" : ""} /><span class="slider"></span></span>
+        Viditeľný v kalendári (ponúkaný na verejnej registrácii)
+      </label>
     `;
+    wrap.querySelector(".delete-term-btn").addEventListener("click", () => deleteTerm(i));
     editor.appendChild(wrap);
-  }
+  });
 }
+
+async function deleteTerm(index) {
+  const t = editableTerms[index];
+  if (t.id) {
+    const hasActive = registrations.some((r) => r.termId === t.id && r.status !== "cancelled");
+    if (hasActive) {
+      alert("Tento termín nie je možné vymazať, pretože sú naň naviazaní účastníci. Najprv ich presuňte na iný termín alebo zrušte ich registráciu.");
+      return;
+    }
+    if (!confirm("Naozaj chcete natrvalo vymazať tento termín?")) return;
+    await deleteDoc(doc(db, "terms", t.id));
+    await logAudit("term-delete", "", { termId: t.id });
+    await loadAll();
+    return;
+  }
+  editableTerms.splice(index, 1);
+  renderTermsEditorList();
+}
+
+document.getElementById("addTermBtn").addEventListener("click", () => {
+  editableTerms.push({ id: null, booked: 0, waitlistCount: 0 });
+  renderTermsEditorList();
+});
 
 async function loadQuizRestrictionSetting() {
   const snap = await getDoc(doc(db, "settings", "quizRestriction"));
@@ -188,24 +219,25 @@ function toLocalInputValue(iso) {
 }
 
 document.getElementById("saveTermsBtn").addEventListener("click", async () => {
-  for (let i = 0; i < TERM_COUNT; i++) {
-    const id = `term${i + 1}`;
+  for (let i = 0; i < editableTerms.length; i++) {
+    const t = editableTerms[i];
     const val = document.getElementById(`termInput${i}`).value;
     if (!val) continue;
-    const existing = terms.find((t) => t.id === id);
     const waitlistCapacity = parseInt(document.getElementById(`waitlistInput${i}`).value, 10) || 0;
-    await setDoc(
-      doc(db, "terms", id),
-      {
-        datetime: new Date(val).toISOString(),
-        capacity: 10,
-        booked: existing?.booked || 0,
-        waitlistCapacity,
-        waitlistCount: existing?.waitlistCount || 0,
-        order: i
-      },
-      { merge: true }
-    );
+    const visibleInCalendar = document.getElementById(`visibleInput${i}`).checked;
+    const payload = {
+      datetime: new Date(val).toISOString(),
+      capacity: 10,
+      booked: t.booked,
+      waitlistCapacity,
+      waitlistCount: t.waitlistCount,
+      visibleInCalendar
+    };
+    if (t.id) {
+      await setDoc(doc(db, "terms", t.id), payload, { merge: true });
+    } else {
+      await addDoc(collection(db, "terms"), payload);
+    }
   }
 
   await setDoc(doc(db, "settings", "quizRestriction"), {
@@ -368,8 +400,8 @@ function renderTable() {
   });
 
   const groupKeys = Object.keys(groups).sort((a, b) => {
-    const ta = termMap[a]?.order ?? 999;
-    const tb = termMap[b]?.order ?? 999;
+    const ta = termMap[a]?.datetime ? new Date(termMap[a].datetime).getTime() : Infinity;
+    const tb = termMap[b]?.datetime ? new Date(termMap[b].datetime).getTime() : Infinity;
     return ta - tb;
   });
 
@@ -397,7 +429,7 @@ function renderTable() {
         <td data-label="Vstup.">${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
         <td data-label="Výst.">${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
         <td data-label="Stav"><span class="badge-pill ${statusBadgeClass}">${statusLabel}</span>${warningIcon}</td>
-        <td data-label="Prišiel"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /></td>
+        <td data-label="Prišiel"><span class="switch"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /><span class="slider"></span></span></td>
         <td data-label=""><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
       `;
 
@@ -1153,6 +1185,8 @@ function describeAuditEntry(e) {
       return `Účastník presunutý z čakacej listiny na potvrdenú registráciu (termín ${termLabel(d.termId)})`;
     case "email-resent":
       return `Ručne odoslaný potvrdzujúci email na adresu ${d.email || "?"}`;
+    case "term-delete":
+      return `Termín workshopu bol natrvalo vymazaný`;
     case "login":
       return "Účastník sa prihlásil do svojej zóny cez kód";
     case "blocked-change-attempt":

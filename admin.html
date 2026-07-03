@@ -6,29 +6,18 @@
 <title>Admin – AI a finančné rozhodnutia</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-<script>
-  (function(){ var t = localStorage.getItem("theme") || "light"; document.documentElement.setAttribute("data-theme", t); })();
-</script>
-
-<header class="topbar" id="topHeader">
-  <div class="brand">🤖💶 AI & Financie <span class="badge">admin</span></div>
-  <nav>
-    <a href="index.html">Registrácia</a>
-    <a href="kviz.html">Kvíz</a>
-  </nav>
-  <button class="theme-toggle" id="themeBtn" title="Prepnúť tému">🌙</button>
-</header>
+<body class="admin-page">
 
 <div class="container" id="loginContainer">
+  <p style="text-align:center; text-transform:uppercase; letter-spacing:.12em; font-size:.72rem; font-weight:600; color:var(--muted); margin-bottom:6px;">AI &amp; Financie · Admin</p>
   <div class="card" id="loginCard" style="max-width:420px; margin-inline:auto;">
     <h2>Prihlásenie do admin zóny</h2>
     <label for="adminEmail">Email</label>
     <input type="email" id="adminEmail" autocomplete="username" />
     <label for="adminPass">Heslo</label>
     <input type="password" id="adminPass" autocomplete="current-password" />
-    <label class="checkbox-row" style="font-weight:400;">
-      <input type="checkbox" id="rememberLoginCheck" checked />
+    <label class="switch-row" style="font-weight:400; margin-top:14px;">
+      <span class="switch"><input type="checkbox" id="rememberLoginCheck" checked /><span class="slider"></span></span>
       Zostať prihlásený na tomto zariadení
     </label>
     <div id="loginError" class="alert error" style="display:none;"></div>
@@ -36,6 +25,7 @@
       <button id="loginBtn">Prihlásiť sa</button>
     </div>
     <p style="color:var(--muted); font-size:.8rem; margin-top:14px;">Účet vytvoríte vo Firebase Console → Authentication → Users. Pozri README.md.</p>
+    <p style="text-align:center; margin-top:10px;"><a href="index.html">Registrácia</a> &nbsp;·&nbsp; <a href="kviz.html">Kvíz</a></p>
   </div>
 </div>
 
@@ -63,7 +53,8 @@
     </div>
 
     <div class="admin-sidebar-footer">
-      <button class="theme-toggle" id="themeBtnSidebar" title="Prepnúť tému">🌙</button>
+      <a href="index.html">Registrácia</a>
+      <a href="kviz.html">Kvíz</a>
       <a href="#" id="logoutLink">↩️ Odhlásiť sa</a>
     </div>
   </aside>
@@ -166,13 +157,18 @@
     <div id="tab-terms" class="tab-panel" style="display:none;">
       <div class="card">
         <h2>Nastavenie termínov workshopu</h2>
-        <p style="color:var(--muted)">Nastavte 5 termínov. Kapacita každého je pevne 10 osôb, počet náhradníkov (čakacia listina) si vieš zvoliť pre každý termín samostatne.</p>
+        <p style="color:var(--muted)">Kapacita každého termínu je pevne 10 osôb, počet náhradníkov (čakacia listina) si vieš zvoliť pre každý termín samostatne. Prepínačom "Viditeľný v kalendári" ovládaš, či sa termín ponúka na verejnej registrácii.</p>
         <div id="termsEditor"></div>
+        <div class="actions">
+          <button type="button" id="addTermBtn" class="secondary">➕ Pridať nový termín</button>
+        </div>
 
-        <label class="checkbox-row" style="font-weight:400; margin-top:18px;">
-          <input type="checkbox" id="restrictQuizDayCheck" />
-          Kvíz (vstupný aj výstupný) bude možné vypĺňať len v deň konania workshopu
-        </label>
+        <div class="card" style="background:rgba(255,255,255,.02); margin-top:22px;">
+          <label class="switch-row" style="font-weight:400;">
+            <span class="switch"><input type="checkbox" id="restrictQuizDayCheck" /><span class="slider"></span></span>
+            Kvíz (vstupný aj výstupný) bude možné vypĺňať len v deň konania workshopu
+          </label>
+        </div>
 
         <div class="actions">
           <button id="saveTermsBtn">💾 Uložiť termíny</button>
