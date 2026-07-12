@@ -695,7 +695,11 @@ function showTransferOptions(r, panelRow) {
   }
 
   const sorted = [...options].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  const cancelledWarning = r.status === "cancelled"
+    ? `<p class="alert error">⚠️ Táto registrácia je zrušená. Presunutím na nový termín ju znova aktivujete (nastaví sa ako potvrdená alebo náhradník podľa voľnej kapacity).</p>`
+    : "";
   box.innerHTML = `
+    ${cancelledWarning}
     <label style="margin:0 0 8px;">Presunúť na termín</label>
     <div class="table-wrap"><table class="reg-table" style="min-width:0;">
       <thead><tr><th>Termín</th><th>Voľné miesta</th><th>Čakacia listina</th><th></th></tr></thead>
@@ -738,7 +742,9 @@ async function performTransfer(r, newTerm) {
     const oldData = oldSnap.exists() ? oldSnap.data() : {};
     const newData = newSnap.exists() ? newSnap.data() : {};
 
-    if (oldSnap.exists()) {
+    // Zrušená registrácia už svoje miesto na starom termíne uvoľnila pri zrušení -
+    // netreba (a nesmie sa) odpočítať znova, inak by kapacita termínu podišla.
+    if (oldSnap.exists() && r.status !== "cancelled") {
       if (r.status === "waitlist") {
         tx.update(oldTermRef, { waitlistCount: Math.max(0, (oldData.waitlistCount || 0) - 1) });
       } else {

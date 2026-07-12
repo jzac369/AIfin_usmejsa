@@ -694,6 +694,14 @@ tr:hover td { background: rgba(61,90,254,.05); }
   filter: grayscale(.4);
   pointer-events: none;
 }
+/* Any table nested inside the open detail panel (e.g. the transfer term-picker)
+   is made of plain <tr>s too, so the rule above would otherwise dim and disable
+   it as well - explicitly exempt anything nested inside .detail-panel-row. */
+#regGroupsContainer.has-open-detail tr.detail-panel-row tr {
+  opacity: 1 !important;
+  filter: none !important;
+  pointer-events: auto !important;
+}
 #regGroupsContainer.has-open-detail tr.detail-active td {
   background: var(--bg);
   position: relative;
