@@ -22,23 +22,24 @@
 
 <section class="hero hero-split wrap-narrow">
   <div class="hero-copy">
-    <span class="hero-eyebrow">Bezplatný workshop · AI a financie</span>
-    <h1 id="heroTitle">Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach</h1>
-    <p id="heroSubtitle" class="hero-lede">Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách.</p>
+    <span class="hero-eyebrow">Bezplatný workshop pre seniorov · 2,5 hodiny</span>
+    <h1 id="heroTitle">Ako sa nenechať oklamať</h1>
+    <p id="heroSubtitle" class="hero-subtitle">Workshop o bezpečnom používaní umelej inteligencie a rozpoznávaní podvodov</p>
+    <p class="hero-hook">Zavolal vám niekto „z banky"? Prišla vám podozrivá správa? Podvodníci sú dnes šikovnejší než kedykoľvek predtým — no rozoznať ich sa dá naučiť, príjemne a bez stresu.</p>
 
     <ul class="hero-points">
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Spoznáte AI podvody skôr, než vás pripravia o peniaze</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Vysvetlené zrozumiteľne, bez odborného žargónu</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Celým workshopom vás sprevádza skúsený lektor</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Malá skupina, max. 10 účastníkov, priestor na otázky</li>
-      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Bezplatný certifikát na záver</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Ako bezpečne používať umelú inteligenciu (napr. ChatGPT)</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Rozpoznáte podozrivý telefonát, e-mail či AI fotografiu</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Zopakujete si zlaté pravidlá bezpečnosti na internete</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Malá skupina, max. 10 účastníkov</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>Certifikát a brožúra na záver</li>
     </ul>
 
     <p id="heroPromo" class="hero-promo"></p>
     <p id="heroLocation" class="hero-location"></p>
 
     <div class="actions hero-actions">
-      <a href="#regForm" class="hero-cta">Prihlásiť sa na workshop</a>
+      <button type="button" id="openRegBtn" class="hero-cta">Registrovať sa na workshop</button>
       <button id="fbShareBtn" class="secondary"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="18" cy="18" r="2.2"/><path d="M8 11l8-4M8 13l8 4"/></svg>Zdieľať na Facebooku</button>
     </div>
   </div>
@@ -58,34 +59,37 @@
   </div>
 </section>
 
-<section class="benefit-row wrap-narrow">
-  <div class="benefit-card">
-    <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-    <div><h4>Jednoduché prihlásenie</h4><p>Stačí vyplniť krátky formulár nižšie — žiadne heslá ani inštalácia.</p></div>
-  </div>
-  <div class="benefit-card">
-    <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6"/></svg></div>
-    <div><h4>Sprevádza vás lektor</h4><p>Celým workshopom vás krok za krokom prevedie skúsený lektor.</p></div>
-  </div>
-  <div class="benefit-card">
-    <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.5.4.8 1 .8 1.6v.5h5.4v-.5c0-.6.3-1.2.8-1.6A6 6 0 0012 3z"/></svg></div>
-    <div><h4>Žiadne skúsenosti netreba</h4><p>Workshop je vysvetlený zrozumiteľne, bez odborného žargónu.</p></div>
-  </div>
-  <div class="benefit-card">
-    <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M14 14.8c2.9.3 5 2.4 5 5.2"/></svg></div>
-    <div><h4>Max. 10 účastníkov</h4><p>Malá skupina znamená osobný prístup a priestor na vaše otázky.</p></div>
-  </div>
-  <div class="benefit-card">
-    <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 5H4v2a3 3 0 003 3M16 5h4v2a3 3 0 01-3 3"/><path d="M12 13v3M9 20h6M9.5 20c0-2 1-3 2.5-3s2.5 1 2.5 3"/></svg></div>
-    <div><h4>Certifikát na záver</h4><p>Po absolvovaní vstupného aj výstupného kvízu si odnesiete potvrdenie.</p></div>
-  </div>
-  <div class="benefit-card">
-    <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
-    <div><h4>Trvá 2,5 hodiny</h4><p>Jedno popoludnie, ktoré vás naučí rozpoznať podvody a využiť AI vo svoj prospech.</p></div>
+<section class="why-section wrap-narrow">
+  <h2 class="why-title">Prečo práve tento workshop</h2>
+  <div class="benefit-row">
+    <div class="benefit-card">
+      <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+      <div><h4>Presne to, čo potrebujete</h4><p>Žiadna zbytočná teória — len reálne situácie a jasné odpovede, čo v nich robiť.</p></div>
+    </div>
+    <div class="benefit-card">
+      <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
+      <div><h4>Vaším tempom</h4><p>Veľké písmo, jednoduchý jazyk, žiadny zhon. Otázky sú vždy vítané.</p></div>
+    </div>
+    <div class="benefit-card">
+      <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M14 14.8c2.9.3 5 2.4 5 5.2"/></svg></div>
+      <div><h4>Nie ste v tom sami</h4><p>Spolu s ďalšími seniormi z Piešťan a okolia, v priateľskej atmosfére Centra Úsmejsa.</p></div>
+    </div>
+    <div class="benefit-card">
+      <div class="icon-circle"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <div><h4>Overené a podporené</h4><p>S finančnou podporou Národnej banky Slovenska, pripravila DigiStart, Akadémia digitálneho vzdelávania.</p></div>
+    </div>
   </div>
 </section>
 
-<div class="container">
+<p class="for-whom wrap-narrow">Určené pre každého, kto používa (alebo by chcel začať používať) internet, mobil či tablet — netreba žiadne predchádzajúce skúsenosti ani vlastné zariadenie.</p>
+
+<section class="final-cta wrap-narrow">
+  <h2>Prihláste sa ešte dnes</h2>
+  <p>Miesta sú obmedzené, aby sa každému účastníkovi ušlo dosť pozornosti a času na otázky.</p>
+  <button type="button" class="hero-cta open-reg-trigger">Registrovať sa na workshop</button>
+</section>
+
+<div class="container" id="registrationSection" style="display:none;">
 
   <div class="card" id="loadingCard">
     <p>Načítavam dostupné termíny…</p>

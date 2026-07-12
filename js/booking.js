@@ -39,10 +39,19 @@ async function loadWorkshopDetails() {
 }
 
 const DEFAULT_HERO = {
-  title: "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach",
-  subtitle: "Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách. Vyberte si termín a zaregistrujte sa nižšie.",
-  promo: "Nenechajte sa prekvapiť podvodníkmi, ktorí dnes zneužívajú umelú inteligenciu. Naučte sa za 2,5 hodiny rozpoznať riziká a zároveň získajte praktické tipy, ako vám AI môže pomôcť lepšie sa rozhodovať o vašich financiách. Miesta sú obmedzené!"
+  title: "Ako sa nenechať oklamať",
+  subtitle: "Workshop o bezpečnom používaní umelej inteligencie a rozpoznávaní podvodov",
+  promo: "Miesta sú obmedzené, aby sa každému účastníkovi ušlo dosť pozornosti a času na otázky."
 };
+
+function openRegistrationSection() {
+  const section = document.getElementById("registrationSection");
+  if (!section) return;
+  section.style.display = "block";
+  section.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+document.getElementById("openRegBtn")?.addEventListener("click", openRegistrationSection);
+document.querySelectorAll(".open-reg-trigger").forEach((btn) => btn.addEventListener("click", openRegistrationSection));
 
 async function loadHero() {
   try {

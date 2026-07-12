@@ -335,6 +335,21 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
   color: var(--accent);
   margin-bottom: 14px;
 }
+.hero-subtitle {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: left;
+  margin: 6px 0 0;
+  max-width: 42ch;
+}
+.hero-hook {
+  text-align: left;
+  font-weight: 600;
+  margin: 16px 0 0;
+  max-width: 50ch;
+}
 .hero-lede {
   text-align: left;
   margin: 14px 0 0;
@@ -387,6 +402,30 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
   box-shadow: var(--shadow);
   display: block;
 }
+.why-section { text-align: center; margin: 8px auto 8px; }
+.why-title { font-size: 1.6rem; color: var(--primary); margin-bottom: 24px; }
+.why-section .benefit-card { text-align: left; }
+
+.for-whom {
+  text-align: center;
+  color: var(--muted);
+  max-width: 620px;
+  margin: 8px auto 44px;
+  font-size: .95rem;
+}
+
+.final-cta {
+  text-align: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px 24px;
+  margin: 0 auto 48px;
+  box-shadow: var(--shadow);
+}
+.final-cta h2 { color: var(--primary); margin-bottom: 10px; }
+.final-cta p { color: var(--muted); margin: 0 auto 22px; max-width: 46ch; }
+
 .hero-badge {
   position: absolute;
   left: 20px;
