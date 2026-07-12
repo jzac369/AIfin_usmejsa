@@ -78,6 +78,7 @@ onAuthStateChanged(auth, (user) => {
     loginContainer.style.display = "none";
     siteFooter.style.display = "none";
     dashboard.style.display = "flex";
+    document.getElementById("adminWelcome").innerHTML = `Vitaj, <strong>${user.email}</strong>`;
     loadAll().then(startLiveListeners);
   } else {
     loginContainer.style.display = "block";
@@ -1240,7 +1241,9 @@ function renderQuestionsEditor() {
 
 document.getElementById("importQuestionsBtn").addEventListener("click", () => {
   const errBox = document.getElementById("questionsImportError");
+  const successBox = document.getElementById("questionsImportSuccess");
   errBox.style.display = "none";
+  successBox.style.display = "none";
   const raw = document.getElementById("questionsImportInput").value.trim();
   if (!raw) {
     errBox.textContent = "Vlož najprv JSON pole otázok.";
@@ -1270,6 +1273,8 @@ document.getElementById("importQuestionsBtn").addEventListener("click", () => {
   questionSets[activeQSet] = parsed;
   renderQuestionsEditor();
   document.getElementById("questionsImportInput").value = "";
+  successBox.style.display = "block";
+  setTimeout(() => (successBox.style.display = "none"), 5000);
 });
 
 document.getElementById("saveQuestionsBtn").addEventListener("click", async () => {

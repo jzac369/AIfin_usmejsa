@@ -70,7 +70,10 @@
 
   <main class="admin-main">
 
-    <div id="alertsPanel"></div>
+    <div class="alerts-row">
+      <div id="alertsPanel"></div>
+      <div id="adminWelcome" class="admin-welcome"></div>
+    </div>
 
     <div id="tab-registrations" class="tab-panel">
       <div class="card">
@@ -236,6 +239,7 @@
             <label for="questionsImportInput">Vlož JSON pole otázok pre aktuálne vybranú sadu (vstupný/výstupný podľa záložky nižšie)</label>
             <textarea id="questionsImportInput" rows="6" placeholder='[{"q":"...","options":["...","...","..."],"correct":0}, ...]'></textarea>
             <div id="questionsImportError" class="alert error" style="display:none;"></div>
+            <div id="questionsImportSuccess" class="alert success" style="display:none;">Otázky boli naimportované do editora nižšie. Skontroluj ich a klikni na „Uložiť otázky“.</div>
             <div class="actions">
               <button type="button" id="importQuestionsBtn" class="secondary">Importovať do editora</button>
             </div>

@@ -806,6 +806,30 @@ tr:hover td { background: rgba(61,90,254,.05); }
   .alert-rotator { transition: none; }
 }
 
+.alerts-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+.alerts-row #alertsPanel { flex: 1; min-width: 0; max-width: 640px; }
+.alerts-row #alertsPanel .alert-box { margin-bottom: 0; }
+.admin-welcome {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: .85rem;
+  color: var(--muted);
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+.admin-welcome strong { color: var(--text); }
+
+@media (max-width: 780px) {
+  .alerts-row { flex-direction: column; }
+  .alerts-row #alertsPanel { max-width: none; width: 100%; }
+  .admin-welcome { margin-left: 0; }
+}
+
 .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
 .tabs button {
   background: var(--card-bg);
