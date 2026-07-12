@@ -803,6 +803,18 @@ tr:hover td { background: rgba(61,90,254,.05); }
 }
 .chart-frame canvas { width: 100% !important; height: 100% !important; }
 
+/* Bar charts (score comparison, term capacity) need width for axis labels -
+   forcing them into the same square frame as the pies squashed the text and
+   plot area. Give them a wider box and let them span two grid columns. */
+.pie-box-wide { grid-column: span 2; }
+.chart-frame-bar {
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+}
+@media (max-width: 480px) {
+  .pie-box-wide { grid-column: span 1; }
+}
+
 .chart-modal {
   position: fixed;
   inset: 0;
