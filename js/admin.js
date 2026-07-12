@@ -400,6 +400,10 @@ function quizBadgeHtml(r) {
 
 function renderTable() {
   const container = document.getElementById("regGroupsContainer");
+  // Every full re-render rebuilds all rows from scratch, so any previously open
+  // detail panel is gone - clear the dimming class or the whole table stays
+  // dimmed/unclickable forever (it only gets set again once a panel reopens).
+  container.classList.remove("has-open-detail");
   const search = document.getElementById("searchInput").value.toLowerCase();
   const termFilter = document.getElementById("termFilter").value;
   const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
@@ -559,6 +563,7 @@ function openDetailPanel(tr, r) {
         <button type="button" class="secondary cancel-btn">🚫 Zrušiť registráciu</button>
         <button type="button" class="danger delete-btn">🗑️ Natrvalo vymazať</button>
       </div>
+      <div id="transferOptionsBox" style="display:none; margin-top:14px;"></div>
     </div>
   `;
   panelRow.appendChild(td);
@@ -620,7 +625,7 @@ function openDetailPanel(tr, r) {
     renderTable();
   });
 
-  panelRow.querySelector(".transfer-btn").addEventListener("click", () => transferRegistration(r));
+  panelRow.querySelector(".transfer-btn").addEventListener("click", () => showTransferOptions(r, panelRow));
   panelRow.querySelector(".cancel-btn").addEventListener("click", () => cancelRegistration(r));
   panelRow.querySelector(".delete-btn").addEventListener("click", () => deleteRegistration(r));
 }
@@ -674,18 +679,57 @@ async function promoteFromWaitlistIfPossible(termId) {
   await logAudit("waitlist-promoted", promote.code, { termId });
 }
 
-async function transferRegistration(r) {
-  const options = terms.filter((t) => t.id !== r.termId);
-  if (options.length === 0) {
-    alert("Nie sú dostupné žiadne iné termíny.");
+function showTransferOptions(r, panelRow) {
+  const box = panelRow.querySelector("#transferOptionsBox");
+  if (box.style.display !== "none") {
+    box.style.display = "none";
+    box.innerHTML = "";
     return;
   }
-  const list = options.map((t, i) => `${i + 1}) ${formatDateTime(t.datetime)} (voľné: ${(t.capacity || 10) - (t.booked || 0)})`).join("\n");
-  const choice = prompt(`Na ktorý termín chcete účastníka ${r.fullName} presunúť?\n\n${list}\n\nZadajte číslo:`);
-  const idx = parseInt(choice, 10) - 1;
-  if (isNaN(idx) || !options[idx]) return;
-  const newTerm = options[idx];
 
+  const options = terms.filter((t) => t.id !== r.termId);
+  if (options.length === 0) {
+    box.innerHTML = `<p style="color:var(--muted); margin:0;">Nie sú dostupné žiadne iné termíny.</p>`;
+    box.style.display = "block";
+    return;
+  }
+
+  const sorted = [...options].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  box.innerHTML = `
+    <label style="margin:0 0 8px;">Presunúť na termín</label>
+    <div class="table-wrap"><table class="reg-table" style="min-width:0;">
+      <thead><tr><th>Termín</th><th>Voľné miesta</th><th>Čakacia listina</th><th></th></tr></thead>
+      <tbody>
+        ${sorted.map((t) => {
+          const freeConfirmed = (t.capacity || 10) - (t.booked || 0);
+          const freeWaitlist = (t.waitlistCapacity || 0) - (t.waitlistCount || 0);
+          const full = freeConfirmed <= 0 && freeWaitlist <= 0;
+          return `
+            <tr>
+              <td data-label="Termín">${formatDateTime(t.datetime)}</td>
+              <td data-label="Voľné miesta">${freeConfirmed > 0 ? freeConfirmed : "plno"}</td>
+              <td data-label="Čakacia listina">${freeWaitlist > 0 ? `${freeWaitlist} voľných` : "plná"}</td>
+              <td data-label=""><button type="button" class="secondary pick-term-btn" data-term-id="${t.id}" ${full ? "disabled" : ""}>${full ? "Plno" : "Presunúť sem"}</button></td>
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table></div>
+  `;
+  box.style.display = "block";
+
+  box.querySelectorAll(".pick-term-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const newTerm = terms.find((t) => t.id === btn.dataset.termId);
+      if (!newTerm) return;
+      btn.disabled = true;
+      btn.textContent = "Presúvam…";
+      await performTransfer(r, newTerm);
+    });
+  });
+}
+
+async function performTransfer(r, newTerm) {
   await runTransaction(db, async (tx) => {
     const oldTermRef = doc(db, "terms", r.termId);
     const newTermRef = doc(db, "terms", newTerm.id);
