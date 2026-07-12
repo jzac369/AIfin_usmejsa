@@ -43,7 +43,7 @@ export function formatDateTime(iso) {
 }
 
 export function downloadICS(term, details) {
-  const durationHours = details?.durationHours || 2;
+  const durationHours = details?.durationHours || 2.5;
   const title = details?.title || "Ako sa nenechať oklamať – AI ako pomocník pri finančných rozhodnutiach";
   const start = new Date(term.datetime);
   const end = new Date(start.getTime() + durationHours * 60 * 60 * 1000);

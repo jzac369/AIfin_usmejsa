@@ -99,6 +99,47 @@ button, .btn { font-weight: 500; }
   padding: 24px 20px 64px;
 }
 
+.wrap-narrow {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ---------- Benefit row (public landing page) ---------- */
+.benefit-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 0 auto 32px;
+}
+.benefit-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.benefit-card h4 { margin: 0 0 4px; font-size: 1rem; }
+.benefit-card p { margin: 0; color: var(--muted); font-size: .88rem; }
+
+/* ---------- Partner logos strip (public landing page) ---------- */
+.partners-section { text-align: center; margin: 8px auto 40px; }
+.partners-section .partners-label {
+  font-size: .85rem; color: var(--muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 18px;
+}
+.partners-row {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+  gap: 32px;
+}
+.partners-row img {
+  height: 56px; width: auto; max-width: 220px;
+  mix-blend-mode: multiply;
+}
+
 /* ---------- Admin sidebar layout ---------- */
 .admin-layout {
   display: flex;

@@ -41,7 +41,7 @@ async function loadWorkshopDetails() {
 const DEFAULT_HERO = {
   title: "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach",
   subtitle: "Bezplatný workshop o tom, ako rozpoznať AI podvody (deepfake, klonovaný hlas, falošné investičné rady) a ako umelú inteligenciu naopak využiť rozumne pri financiách. Vyberte si termín a zaregistrujte sa nižšie.",
-  promo: "Nenechajte sa prekvapiť podvodníkmi, ktorí dnes zneužívajú umelú inteligenciu. Naučte sa za 2 hodiny rozpoznať riziká a zároveň získajte praktické tipy, ako vám AI môže pomôcť lepšie sa rozhodovať o vašich financiách. Miesta sú obmedzené!"
+  promo: "Nenechajte sa prekvapiť podvodníkmi, ktorí dnes zneužívajú umelú inteligenciu. Naučte sa za 2,5 hodiny rozpoznať riziká a zároveň získajte praktické tipy, ako vám AI môže pomôcť lepšie sa rozhodovať o vašich financiách. Miesta sú obmedzené!"
 };
 
 async function loadHero() {

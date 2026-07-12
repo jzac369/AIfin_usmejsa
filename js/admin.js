@@ -1099,7 +1099,7 @@ async function loadWorkshopDetails() {
   const data = snap.exists() ? snap.data() : {};
   document.getElementById("workshopTitleInput").value = data.title || "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach";
   document.getElementById("workshopLocationInput").value = data.location || "";
-  document.getElementById("workshopDurationInput").value = data.durationHours || 2;
+  document.getElementById("workshopDurationInput").value = data.durationHours || 2.5;
   document.getElementById("workshopDescriptionInput").value = data.description || "";
 }
 
@@ -1107,7 +1107,7 @@ document.getElementById("saveWorkshopDetailsBtn").addEventListener("click", asyn
   await setDoc(doc(db, "settings", "workshopDetails"), {
     title: document.getElementById("workshopTitleInput").value,
     location: document.getElementById("workshopLocationInput").value,
-    durationHours: parseFloat(document.getElementById("workshopDurationInput").value) || 2,
+    durationHours: parseFloat(document.getElementById("workshopDurationInput").value) || 2.5,
     description: document.getElementById("workshopDescriptionInput").value
   });
   document.getElementById("workshopDetailsSaveMsg").style.display = "block";
