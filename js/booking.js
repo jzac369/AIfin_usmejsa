@@ -4,7 +4,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getFirestore, collection, getDocs, doc, getDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { generateCode, formatDateTime, downloadICS } from "./util.js";
+import { generateCode, formatDateTime, downloadICS, ICONS } from "./util.js";
 
 function wireOtherToggle(radioOrCheckboxId, textId) {
   const el = document.getElementById(radioOrCheckboxId);
@@ -34,7 +34,7 @@ async function loadWorkshopDetails() {
   workshopDetails = snap.exists() ? snap.data() : null;
   if (workshopDetails?.location) {
     const el = document.getElementById("heroLocation");
-    if (el) el.textContent = `📍 ${workshopDetails.location}`;
+    if (el) el.innerHTML = `${ICONS.location}${workshopDetails.location}`;
   }
 }
 

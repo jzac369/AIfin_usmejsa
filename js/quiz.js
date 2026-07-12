@@ -4,7 +4,7 @@ import {
   getFirestore, doc, getDoc, updateDoc, collection, getDocs, addDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
-import { formatDateTime, downloadICS } from "./util.js";
+import { formatDateTime, downloadICS, ICONS } from "./util.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -104,7 +104,7 @@ async function loadMaterials() {
     link.className = "btn secondary";
     link.style.marginRight = "8px";
     link.style.marginBottom = "8px";
-    link.textContent = `📄 ${m.title}`;
+    link.innerHTML = `<svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>${m.title}`;
     list.appendChild(link);
   });
   section.style.display = "block";
@@ -168,7 +168,7 @@ function showWelcome() {
   const restrictedToday = quizRestrictedToWorkshopDay && currentTerm && !isSameCalendarDay(currentTerm.datetime);
 
   if (registration.status !== "cancelled" && quizPending && restrictedToday) {
-    actions.innerHTML = `<p style="color:var(--muted); margin:0;">📅 Kvíz bude dostupný až v deň workshopu (${formatDateTime(currentTerm.datetime)}).</p>`;
+    actions.innerHTML = `<p style="color:var(--muted); margin:0; display:flex; align-items:center;">${ICONS.calendar}Kvíz bude dostupný až v deň workshopu (${formatDateTime(currentTerm.datetime)}).</p>`;
   } else if (registration.status !== "cancelled") {
     if (!registration.entryQuizDone) {
       const b = button("Spustiť vstupný kvíz", () => startQuiz("entry"));
@@ -197,8 +197,8 @@ function renderManageBox() {
     box.innerHTML = `<p style="color:var(--muted); margin:0;">Táto registrácia je zrušená. Ak sa chcete znova prihlásiť, vyplňte prosím nový registračný formulár.</p>`;
     return;
   }
-  box.appendChild(button("🔁 Zmeniť termín", showTransferOptions, "secondary"));
-  box.appendChild(button("🚫 Zrušiť registráciu", cancelMyRegistration, "danger"));
+  box.appendChild(button(`${ICONS.cycle}Zmeniť termín`, showTransferOptions, "secondary"));
+  box.appendChild(button(`${ICONS.ban}Zrušiť registráciu`, cancelMyRegistration, "danger"));
 }
 
 async function showTransferOptions() {
@@ -355,7 +355,7 @@ function showFeedbackForm() {
 
 function button(label, onClick, cls = "") {
   const btn = document.createElement("button");
-  btn.textContent = label;
+  btn.innerHTML = label;
   if (cls) btn.className = cls;
   btn.addEventListener("click", onClick);
   return btn;
@@ -368,8 +368,8 @@ function startQuiz(set) {
   welcomeCard.style.display = "none";
   quizCard.style.display = "block";
   const count = quizSets[set].length;
-  document.getElementById("quizTitle").textContent =
-    set === "entry" ? `📝 Vstupný kvíz (${count} otázok)` : `📝 Výstupný kvíz (${count} otázok)`;
+  document.getElementById("quizTitle").innerHTML =
+    set === "entry" ? `${ICONS.quiz}Vstupný kvíz (${count} otázok)` : `${ICONS.quiz}Výstupný kvíz (${count} otázok)`;
   renderQuestion();
 }
 
@@ -442,8 +442,9 @@ async function finishQuiz(set) {
   logParticipantEvent("quiz-completed", { set: activeSet, score, total: set.length });
   quizCard.style.display = "none";
   resultCard.style.display = "block";
+  const badgeColor = pct >= 75 ? "var(--accent)" : pct >= 50 ? "var(--primary)" : "var(--muted)";
   document.getElementById("resultBadge").innerHTML =
-    pct >= 75 ? "🎉" : pct >= 50 ? "👍" : "💪";
+    `<svg viewBox="0 0 24 24" fill="none" stroke="${badgeColor}" stroke-width="1.6" style="width:56px;height:56px;"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 5H4v2a3 3 0 003 3M16 5h4v2a3 3 0 01-3 3"/><path d="M12 13v3M9 20h6M9.5 20c0-2 1-3 2.5-3s2.5 1 2.5 3"/></svg>`;
   document.getElementById("scoreOut").textContent = `${score} / ${set.length}`;
   document.getElementById("scoreLabel").textContent =
     (activeSet === "entry" ? "Výsledok vstupného kvízu" : "Výsledok výstupného kvízu") + ` (${pct} %)`;
@@ -456,7 +457,7 @@ async function finishQuiz(set) {
     const entryPctCmp = Math.round((registration.entryScore / entryTotal) * 100);
     const exitPctCmp = Math.round((registration.exitScore / exitTotal) * 100);
     const diff = exitPctCmp - entryPctCmp;
-    const diffText = diff > 0 ? `zlepšenie o ${diff} % 🎉` : diff === 0 ? "rovnaký výsledok" : `pokles o ${Math.abs(diff)} %`;
+    const diffText = diff > 0 ? `zlepšenie o ${diff} %` : diff === 0 ? "rovnaký výsledok" : `pokles o ${Math.abs(diff)} %`;
     compareBox.innerHTML = `<p>Vstupný kvíz: <strong>${registration.entryScore}/${entryTotal}</strong> → Výstupný kvíz: <strong>${registration.exitScore}/${exitTotal}</strong> (${diffText})</p>`;
   }
 
@@ -469,7 +470,7 @@ async function finishQuiz(set) {
       showWelcome();
     }));
   } else {
-    resultActions.appendChild(button("Zobraziť certifikát 🏆", showFinalResult));
+    resultActions.appendChild(button(`Zobraziť certifikát${ICONS.trophy}`, showFinalResult));
   }
 }
 
@@ -507,9 +508,9 @@ document.getElementById("copyCodeBtn").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(code);
     const btn = document.getElementById("copyCodeBtn");
-    const original = btn.textContent;
-    btn.textContent = "✅ Skopírované!";
-    setTimeout(() => (btn.textContent = original), 1800);
+    const original = btn.innerHTML;
+    btn.innerHTML = `${ICONS.check}Skopírované!`;
+    setTimeout(() => (btn.innerHTML = original), 1800);
   } catch {
     alert(`Váš kód: ${code}`);
   }

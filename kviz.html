@@ -6,7 +6,7 @@
 <title>Kvíz – AI a finančné rozhodnutia</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body class="warm-theme">
 
 <header class="topbar">
   <div class="brand">AI a Financie <span class="badge">workshop</span></div>
@@ -42,35 +42,35 @@
     <div id="statusBadges" style="margin-top:12px;"></div>
 
     <div class="section-group">
-      <h3>📝 Váš kvíz</h3>
+      <h3><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Váš kvíz</h3>
       <div class="actions" id="welcomeActions"></div>
     </div>
 
     <div class="section-group">
-      <h3>⚙️ Spravovať registráciu</h3>
+      <h3><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M21 12h-2M5 12H3M18.4 5.6l-1.4 1.4M7 15.6l-1.4 1.4M18.4 18.4l-1.4-1.4M7 8.4L5.6 7"/></svg>Spravovať registráciu</h3>
       <div id="manageBox" class="actions"></div>
       <div id="transferOptionsBox"></div>
     </div>
 
     <div class="section-group">
-      <h3>💬 Spätná väzba a ostatné</h3>
+      <h3><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H8l-4 4z"/></svg>Spätná väzba a ostatné</h3>
       <div class="actions">
-        <button id="feedbackNavBtn" class="secondary">💬 Zanechať spätnú väzbu</button>
-        <button id="showQrBtn" class="secondary">📱 Zobraziť QR kód</button>
-        <button id="copyCodeBtn" class="secondary">📋 Kopírovať kód</button>
-        <button id="icsDownloadBtn" class="secondary">📅 Pridať do kalendára</button>
+        <button id="feedbackNavBtn" class="secondary"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H8l-4 4z"/></svg>Zanechať spätnú väzbu</button>
+        <button id="showQrBtn" class="secondary"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg>Zobraziť QR kód</button>
+        <button id="copyCodeBtn" class="secondary"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/></svg>Kopírovať kód</button>
+        <button id="icsDownloadBtn" class="secondary"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Pridať do kalendára</button>
       </div>
       <div id="qrDisplayBox" class="qr-box" style="display:none; justify-content:center;"></div>
     </div>
 
     <div class="section-group" id="materialsSection" style="display:none;">
-      <h3>📚 Materiály na stiahnutie</h3>
+      <h3><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15.5a2.5 2.5 0 01-2.5 2.5H4z"/><path d="M4 18.5A2.5 2.5 0 016.5 16H20"/></svg>Materiály na stiahnutie</h3>
       <div id="materialsList"></div>
     </div>
   </div>
 
   <div class="card" id="feedbackCard" style="display:none;">
-    <h2>💬 Spätná väzba na workshop</h2>
+    <h2><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v11H8l-4 4z"/></svg>Spätná väzba na workshop</h2>
     <p style="color:var(--muted)">Ďakujeme, že ste sa zúčastnili! Vaša spätná väzba nám pomôže workshop zlepšiť.</p>
     <label>Ako by ste ohodnotili workshop? (1 = najhoršie, 5 = najlepšie)</label>
     <div id="starRating" style="font-size:2rem; letter-spacing:.2em; cursor:pointer;"></div>
@@ -81,7 +81,7 @@
     <div id="feedbackMsg" class="alert success" style="display:none;">Ďakujeme za spätnú väzbu!</div>
     <div class="actions">
       <button id="submitFeedbackBtn">Odoslať spätnú väzbu</button>
-      <button id="feedbackBackBtn" class="secondary">← Späť</button>
+      <button id="feedbackBackBtn" class="secondary"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Späť</button>
     </div>
   </div>
 
@@ -102,10 +102,10 @@
   </div>
 
   <div class="card no-print" id="certCardWrap" style="display:none;">
-    <h2>🏆 Váš certifikát</h2>
+    <h2><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 5H4v2a3 3 0 003 3M16 5h4v2a3 3 0 01-3 3"/><path d="M12 13v3M9 20h6M9.5 20c0-2 1-3 2.5-3s2.5 1 2.5 3"/></svg>Váš certifikát</h2>
     <div class="certificate" id="certificate"></div>
     <div class="actions" style="justify-content:center; margin-top:16px;">
-      <button id="printCertBtn">🖨️ Vytlačiť / uložiť ako PDF</button>
+      <button id="printCertBtn"><svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6"/><rect x="6" y="13" width="12" height="8"/><path d="M4 9h16v7h-4"/></svg>Vytlačiť / uložiť ako PDF</button>
     </div>
   </div>
 
