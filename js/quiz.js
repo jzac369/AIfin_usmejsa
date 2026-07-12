@@ -146,12 +146,12 @@ function showWelcome() {
   document.getElementById("profileAvatar").textContent =
     `${(registration.firstName || registration.fullName || "?")[0] || "?"}${(registration.lastName || "")[0] || ""}`.toUpperCase();
   document.getElementById("welcomeTermInfo").textContent = currentTerm
-    ? `📅 Váš termín: ${formatDateTime(currentTerm.datetime)}`
-    : "";
+    ? `Váš kód: ${registration.code} · Váš termín: ${formatDateTime(currentTerm.datetime)}`
+    : `Váš kód: ${registration.code}`;
 
   const badges = document.getElementById("statusBadges");
   const statusLabel = registration.status === "cancelled" ? "zrušená" : registration.status === "waitlist" ? "náhradník" : "potvrdená";
-  const statusBadgeClass = registration.status === "cancelled" ? "pending" : registration.status === "waitlist" ? "status-waitlist" : "status-confirmed";
+  const statusBadgeClass = registration.status === "cancelled" ? "status-cancelled" : registration.status === "waitlist" ? "status-waitlist" : "status-confirmed";
   badges.innerHTML = `
     <span class="badge-pill ${statusBadgeClass}">Registrácia: ${statusLabel}</span>
     &nbsp;
@@ -390,6 +390,8 @@ function renderQuestion() {
     div.className = "quiz-option";
     div.textContent = opt;
     div.addEventListener("click", () => {
+      if (optionsBox.dataset.locked) return;
+      optionsBox.dataset.locked = "1";
       answers[currentIndex] = i;
       currentIndex++;
       if (currentIndex >= set.length) {
@@ -403,25 +405,40 @@ function renderQuestion() {
 }
 
 async function finishQuiz(set) {
-  quizCard.style.display = "none";
   const score = answers.reduce((acc, a, i) => acc + (a === set[i].correct ? 1 : 0), 0);
   const pct = Math.round((score / set.length) * 100);
+  // -1 namiesto undefined pre neodpovedané otázky - Firestore odmietne zápis s undefined hodnotou v poli.
+  const safeAnswers = set.map((_, i) => (typeof answers[i] === "number" ? answers[i] : -1));
 
   const updates = {};
   if (activeSet === "entry") {
     updates.entryQuizDone = true;
     updates.entryScore = score;
     updates.entryTotal = set.length;
-    updates.entryAnswers = answers;
+    updates.entryAnswers = safeAnswers;
   } else {
     updates.exitQuizDone = true;
     updates.exitScore = score;
     updates.exitTotal = set.length;
-    updates.exitAnswers = answers;
+    updates.exitAnswers = safeAnswers;
   }
-  await updateDoc(doc(db, "registrations", code), updates);
-  Object.assign(registration, updates);
 
+  try {
+    await updateDoc(doc(db, "registrations", code), updates);
+  } catch (err) {
+    quizCard.style.display = "block";
+    const body = document.getElementById("quizBody");
+    body.innerHTML = `
+      <p class="alert error">Výsledok kvízu sa nepodarilo uložiť (skús to znova, prípadne skontroluj internetové pripojenie). Tvoje odpovede zostali zachované.</p>
+      <div class="actions"><button type="button" id="retryFinishQuizBtn">Skúsiť znova uložiť</button></div>
+    `;
+    document.getElementById("progressFill").style.width = "100%";
+    document.getElementById("retryFinishQuizBtn").addEventListener("click", () => finishQuiz(set));
+    return;
+  }
+
+  Object.assign(registration, updates);
+  quizCard.style.display = "none";
   resultCard.style.display = "block";
   document.getElementById("resultBadge").innerHTML =
     pct >= 75 ? "🎉" : pct >= 50 ? "👍" : "💪";

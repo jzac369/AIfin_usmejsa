@@ -48,6 +48,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   try {
     await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
     await signInWithEmailAndPassword(auth, email, pass);
+    await logAudit("admin-login", "", { email });
   } catch (err) {
     errBox.textContent = "Nesprávny email alebo heslo.";
     errBox.style.display = "block";
@@ -422,7 +423,7 @@ function renderTable() {
     rowsList.forEach((r) => {
       const tr = document.createElement("tr");
       const statusLabel = r.status === "cancelled" ? "zrušená" : r.status === "waitlist" ? "náhradník" : "potvrdená";
-      const statusBadgeClass = r.status === "cancelled" ? "pending" : r.status === "waitlist" ? "status-waitlist" : "status-confirmed";
+      const statusBadgeClass = r.status === "cancelled" ? "status-cancelled" : r.status === "waitlist" ? "status-waitlist" : "status-confirmed";
       const warningIcon = r.blockedChangeAttempt
         ? ` <span title="Pokus o zmenu/zrušenie menej ako 48h pred workshopom bol zablokovaný">⚠️</span>`
         : "";
@@ -431,6 +432,7 @@ function renderTable() {
         <td data-label="Meno">${r.fullName}</td>
         <td data-label="Email">${r.email}</td>
         <td data-label="Telefón">${r.phone}</td>
+        <td data-label="Mesto">${r.city || ""}</td>
         <td data-label="Vstup.">${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
         <td data-label="Výst.">${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
         <td data-label="Stav"><div class="badge-row"><span class="badge-pill ${statusBadgeClass}">${statusLabel}</span>${quizBadgeHtml(r)}</div>${warningIcon}</td>
@@ -454,7 +456,7 @@ function renderTable() {
   const tableHeadHtml = `
     <thead>
       <tr>
-        <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th>
+        <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th><th>Mesto</th>
         <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Pozn.</th><th>Prišiel</th><th></th>
       </tr>
     </thead>
@@ -469,12 +471,12 @@ function renderTable() {
     const groupWrap = document.createElement("div");
     groupWrap.style.marginBottom = "28px";
     groupWrap.innerHTML = `
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; padding-bottom:8px; border-bottom:2px solid var(--primary);">
-        <h3 style="margin:0;">
-          📅 ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
-          <span style="color:var(--muted); font-weight:400; font-size:.85rem;">(${allRows.length} ${allRows.length === 1 ? "účastník" : allRows.length < 5 ? "účastníci" : "účastníkov"})</span>
-        </h3>
-        <button class="btn-print print-attendance-btn" type="button">🖨️ Prezenčná listina</button>
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+        <div class="term-date-chip">
+          ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
+          <span style="color:var(--muted); font-weight:400;">(${allRows.length} ${allRows.length === 1 ? "účastník" : allRows.length < 5 ? "účastníci" : "účastníkov"})</span>
+        </div>
+        <button class="btn-print print-attendance-btn" type="button">Prezenčná listina</button>
       </div>
       <table>${tableHeadHtml}<tbody class="main-rows-body"></tbody></table>
     `;
@@ -500,16 +502,25 @@ function renderTable() {
   });
 }
 
+function updateDetailDimming() {
+  const container = document.getElementById("regGroupsContainer");
+  const anyOpen = container.querySelector(".detail-panel-row") != null;
+  container.classList.toggle("has-open-detail", anyOpen);
+}
+
 function openDetailPanel(tr, r) {
   const existing = tr.nextElementSibling;
   if (existing && existing.classList.contains("detail-panel-row")) {
     existing.remove();
+    tr.classList.remove("detail-active");
+    updateDetailDimming();
     return;
   }
+  tr.classList.add("detail-active");
   const panelRow = document.createElement("tr");
   panelRow.className = "detail-panel-row";
   const td = document.createElement("td");
-  td.colSpan = 10;
+  td.colSpan = 11;
   td.innerHTML = `
     <div class="card" style="margin:8px 0;">
       <p style="color:var(--muted); font-size:.85rem; margin-top:0;">
@@ -539,6 +550,7 @@ function openDetailPanel(tr, r) {
   `;
   panelRow.appendChild(td);
   tr.after(panelRow);
+  updateDetailDimming();
 
   panelRow.querySelector(".resend-email-btn").addEventListener("click", async (e) => {
     const btn = e.target;
@@ -1193,6 +1205,8 @@ function describeAuditEntry(e) {
       return `Ručne odoslaný potvrdzujúci email na adresu ${d.email || "?"}`;
     case "term-delete":
       return `Termín workshopu bol natrvalo vymazaný`;
+    case "admin-login":
+      return `Prihlásenie do admin zóny (${d.email || e.adminEmail || "?"})`;
     case "login":
       return "Účastník sa prihlásil do svojej zóny cez kód";
     case "blocked-change-attempt":

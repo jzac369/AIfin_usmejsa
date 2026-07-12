@@ -56,6 +56,7 @@
 
     <h2>3. Krátky dotazník</h2>
 
+    <div class="survey-grid">
     <fieldset>
       <legend>1. Ako ste sa dozvedeli o tejto akcii?</legend>
       <div class="radio-row"><input type="radio" name="source" value="Sociálne siete" required> <label style="margin:0;font-weight:400;">Sociálne siete</label></div>
@@ -102,6 +103,7 @@
       <div class="radio-row"><input type="radio" name="reason" value="Iné" id="reasonOther"> <label style="margin:0;font-weight:400;">Iné</label></div>
       <input type="text" id="reasonOtherText" placeholder="Doplňte prosím..." style="display:none; margin-top:6px;" />
     </fieldset>
+    </div>
 
     <label class="checkbox-row" style="font-weight:400;">
       <input type="checkbox" id="gdpr" required />
@@ -112,7 +114,7 @@
     <div id="formError" class="alert error" style="display:none;"></div>
 
     <div class="actions">
-      <button type="submit" id="submitBtn">Záväzne sa prihlásiť</button>
+      <button type="submit" id="submitBtn">Prihlásiť sa na workshop</button>
     </div>
   </form>
 
@@ -130,7 +132,7 @@
 </div>
 
 <footer class="site-footer">
-  Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“ · Registrácia beží cez Firebase.
+  Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>

@@ -24,7 +24,6 @@
     <div class="actions">
       <button id="loginBtn">Prihlásiť sa</button>
     </div>
-    <p style="color:var(--muted); font-size:.8rem; margin-top:14px;">Účet vytvoríte vo Firebase Console → Authentication → Users. Pozri README.md.</p>
     <p style="text-align:center; margin-top:10px;"><a href="index.html">Registrácia</a> &nbsp;·&nbsp; <a href="kviz.html">Kvíz</a></p>
   </div>
 </div>
@@ -32,11 +31,14 @@
 <div id="dashboard" class="admin-layout" style="display:none;">
 
   <aside class="admin-sidebar">
-    <div class="admin-sidebar-brand">AI &amp; Financie</div>
+    <div class="admin-sidebar-brand">
+      Workshop Ako sa nenechať oklamať – AI ako pomocník pri finančných rozhodnutiach
+      <span class="admin-sidebar-brand-sub">Management</span>
+    </div>
 
     <div class="admin-nav-group">
       <div class="admin-nav-label">Prehľad</div>
-      <button class="admin-nav-item active" data-tab="registrations">Prihlásení</button>
+      <button class="admin-nav-item active" data-tab="registrations">Registrácie</button>
       <button class="admin-nav-item" data-tab="results">Výsledky</button>
       <button class="admin-nav-item" data-tab="stats">Štatistiky</button>
       <button class="admin-nav-item" data-tab="log">Log</button>
@@ -67,14 +69,19 @@
       <div class="card">
         <h2>Zoznam prihlásených</h2>
         <div class="search-row">
-          <input type="text" id="searchInput" placeholder="Hľadať podľa mena, mesta, emailu alebo kódu…" />
-          <select id="termFilter"><option value="">Všetky termíny</option></select>
-          <button id="addRegistrantBtn" class="secondary">➕ Pridať účastníka</button>
-          <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
+          <div class="search-filters">
+            <input type="text" id="searchInput" placeholder="Hľadať meno, mesto, email, kód…" />
+            <select id="termFilter"><option value="">Všetky termíny</option></select>
+          </div>
+          <div class="search-actions">
+            <button id="addRegistrantBtn" class="secondary">➕ Pridať účastníka</button>
+            <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
+          </div>
         </div>
         <p style="color:var(--muted); font-size:.82rem;">
           <span class="badge-pill status-confirmed">potvrdená</span> = potvrdená registrácia ·
           <span class="badge-pill status-waitlist">náhradník</span> = čakacia listina ·
+          <span class="badge-pill status-cancelled">zrušená</span> = zrušená registrácia ·
           <span class="badge-pill quiz-one">1 kvíz</span> = jeden kvíz hotový ·
           <span class="badge-pill quiz-two">2 kvízy</span> = oba kvízy hotové
         </p>
@@ -167,7 +174,7 @@
         <div class="card" style="background:rgba(255,255,255,.02); margin-top:22px;">
           <label class="switch-row" style="font-weight:400;">
             <span class="switch"><input type="checkbox" id="restrictQuizDayCheck" /><span class="slider"></span></span>
-            Kvíz (vstupný aj výstupný) bude možné vypĺňať len v deň konania workshopu
+            Kvíz (vstupný aj výstupný) bude možné vyplniť len v deň konania workshopu
           </label>
         </div>
 
@@ -216,7 +223,7 @@
     <div id="tab-email" class="tab-panel" style="display:none;">
       <div class="card">
         <h2>Text potvrdzovacieho emailu</h2>
-        <p style="color:var(--muted)">Odosielanie beží cez bezplatnú službu EmailJS (nastavenie v <code>js/emailjs-config.js</code>, návod v README). Dostupné premenné: <code>{{meno}}</code>, <code>{{priezvisko}}</code>, <code>{{termin}}</code>, <code>{{kod}}</code>.</p>
+        <p style="color:var(--muted)">Dostupné premenné: <code>{{meno}}</code>, <code>{{priezvisko}}</code>, <code>{{termin}}</code>, <code>{{kod}}</code>.</p>
         <label for="emailSubjectInput">Predmet emailu</label>
         <input type="text" id="emailSubjectInput" />
         <label>Text emailu</label>
@@ -255,7 +262,7 @@
     <div id="tab-materials" class="tab-panel" style="display:none;">
       <div class="card">
         <h2>Materiály na stiahnutie</h2>
-        <p style="color:var(--muted)">Nahraté súbory uvidia všetci účastníci po prihlásení sa svojím kódom. Kvôli bezplatnému plánu (bez Firebase Storage) je limit veľkosti súboru cca <strong>700 KB</strong> — vhodné pre kratšie PDF s malým počtom obrázkov.</p>
+        <p style="color:var(--muted)">Nahraté súbory uvidia všetci účastníci po prihlásení sa svojím kódom. Limit veľkosti súboru je cca <strong>700 KB</strong> — vhodné pre kratšie PDF s malým počtom obrázkov.</p>
 
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:0 16px; align-items:end;">
           <div><label>Názov materiálu</label><input type="text" id="newMaterialTitle" placeholder="napr. Brožúra – AI a financie" /></div>
@@ -273,7 +280,7 @@
 
 <div id="attendancePrintArea"></div>
 
-<footer class="site-footer no-print" id="siteFooter">Admin zóna · chránené cez Firebase Authentication</footer>
+<footer class="site-footer no-print" id="siteFooter">Admin zóna · chránená prihlasovacím menom a heslom</footer>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
