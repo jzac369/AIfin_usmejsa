@@ -5,7 +5,7 @@ import {
   setPersistence, browserLocalPersistence, browserSessionPersistence
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
+  getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, generateCode } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
@@ -78,13 +78,50 @@ onAuthStateChanged(auth, (user) => {
     loginContainer.style.display = "none";
     siteFooter.style.display = "none";
     dashboard.style.display = "flex";
-    loadAll();
+    loadAll().then(startLiveListeners);
   } else {
     loginContainer.style.display = "block";
     siteFooter.style.display = "block";
     dashboard.style.display = "none";
+    stopLiveListeners();
   }
 });
+
+// ---------- LIVE UPDATES ----------
+// Keeps Registrácie/Výsledky/Štatistiky/upozornenia in sync the moment anyone
+// registers, cancels, or a term changes - no manual refresh needed. Skips the
+// terms editor (would wipe unsaved edits) and skips re-rendering the table
+// while a detail panel is open (would yank it closed under the admin).
+let unsubTerms = null;
+let unsubRegistrations = null;
+
+function startLiveListeners() {
+  stopLiveListeners();
+  unsubTerms = onSnapshot(collection(db, "terms"), (snap) => {
+    terms = snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(a.datetime || 0) - new Date(b.datetime || 0));
+    onLiveDataChanged();
+  });
+  unsubRegistrations = onSnapshot(collection(db, "registrations"), (snap) => {
+    registrations = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    onLiveDataChanged();
+  });
+}
+
+function stopLiveListeners() {
+  if (unsubTerms) { unsubTerms(); unsubTerms = null; }
+  if (unsubRegistrations) { unsubRegistrations(); unsubRegistrations = null; }
+}
+
+async function onLiveDataChanged() {
+  updateRegistrationStatusIndicator();
+  await renderAlerts();
+  renderTermFilter();
+  if (!document.querySelector("#regGroupsContainer .detail-panel-row")) {
+    renderTable();
+  }
+  await renderStats();
+  renderResultsTable();
+}
 
 // ---------- NAVIGATION (sidebar) ----------
 document.querySelectorAll(".admin-nav-item").forEach((btn) => {
@@ -160,13 +197,60 @@ async function renderAlerts() {
     }
   });
 
-  const notDoneEntry = registrations.filter((r) => r.status !== "cancelled" && !r.entryQuizDone).length;
+  const activeRegs = registrations.filter((r) => r.status !== "cancelled");
+  const notDoneEntry = activeRegs.filter((r) => !r.entryQuizDone).length;
   if (notDoneEntry > 0) {
     alerts.push({ urgent: false, text: `📝 ${notDoneEntry} prihlásených účastníkov ešte nevyplnilo vstupný kvíz.` });
   }
 
   const { todayViews, monthViews } = await loadPageViewStats();
   alerts.push({ urgent: false, text: `📊 Registračnú stránku si dnes pozrelo ${todayViews} ľudí (tento mesiac ${monthViews}).` });
+
+  // Ďalšie vždy dostupné "zaujímavosti" - aby v rotácii bolo vždy aspoň
+  // niekoľko správ, nielen tie podmienené vzácnym stavom termínov.
+  const oneQuizOnly = activeRegs.filter((r) => (r.entryQuizDone && !r.exitQuizDone) || (!r.entryQuizDone && r.exitQuizDone)).length;
+  alerts.push({ urgent: false, text: `🧩 ${oneQuizOnly} účastníkov má hotový len jeden z dvoch kvízov.` });
+
+  const bothQuizzesDone = activeRegs.filter((r) => r.entryQuizDone && r.exitQuizDone).length;
+  alerts.push({ urgent: false, text: `🎓 ${bothQuizzesDone} účastníkov už úspešne dokončilo oba kvízy.` });
+
+  alerts.push({ urgent: false, text: `👥 Aktuálne je prihlásených ${activeRegs.length} účastníkov na ${terms.length} termínov.` });
+
+  const totalWaitlist = terms.reduce((acc, t) => acc + (t.waitlistCount || 0), 0);
+  if (totalWaitlist > 0) {
+    alerts.push({ urgent: false, text: `⏳ Na čakacej listine aktuálne čaká ${totalWaitlist} ${totalWaitlist === 1 ? "osoba" : "ľudí"}.` });
+  }
+
+  const upcoming = terms
+    .filter((t) => t.datetime && new Date(t.datetime).getTime() > now)
+    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime))[0];
+  if (upcoming) {
+    const daysUntil = Math.ceil((new Date(upcoming.datetime).getTime() - now) / (1000 * 60 * 60 * 24));
+    alerts.push({ urgent: false, text: `📅 Najbližší termín je o ${daysUntil} ${daysUntil === 1 ? "deň" : daysUntil < 5 ? "dni" : "dní"} (${formatDateTime(upcoming.datetime)}).` });
+  }
+
+  const withBoth = activeRegs.filter((r) => r.entryScore != null && r.exitScore != null);
+  if (withBoth.length > 0) {
+    const avgEntry = withBoth.reduce((acc, r) => acc + r.entryScore / (r.entryTotal || 8), 0) / withBoth.length;
+    const avgExit = withBoth.reduce((acc, r) => acc + r.exitScore / (r.exitTotal || 8), 0) / withBoth.length;
+    const improvementPct = Math.round((avgExit - avgEntry) * 100);
+    alerts.push({
+      urgent: false,
+      text: improvementPct >= 0
+        ? `📈 Priemerné skóre sa medzi vstupným a výstupným kvízom zlepšilo o ${improvementPct} %.`
+        : `📉 Priemerné skóre pokleslo o ${Math.abs(improvementPct)} % - možno stojí za úvahu prejsť ťažšie otázky na workshope.`
+    });
+  }
+
+  const attendanceEligible = activeRegs.filter((r) => {
+    const term = terms.find((t) => t.id === r.termId);
+    return term?.datetime && new Date(term.datetime).getTime() < now;
+  });
+  if (attendanceEligible.length > 0) {
+    const attendedCount = attendanceEligible.filter((r) => r.attended).length;
+    const attendanceRate = Math.round((attendedCount / attendanceEligible.length) * 100);
+    alerts.push({ urgent: false, text: `✅ Miera účasti na doterajších workshopoch je ${attendanceRate} % (${attendedCount}/${attendanceEligible.length}).` });
+  }
 
   clearInterval(alertRotationTimer);
   alertRotationTimer = null;
