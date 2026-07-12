@@ -1283,6 +1283,8 @@ async function loadAuditLog() {
   container.appendChild(table);
 }
 
+document.getElementById("refreshLogBtn").addEventListener("click", () => loadAuditLog());
+
 document.getElementById("purgeLogBtn").addEventListener("click", async () => {
   const dateVal = document.getElementById("logPurgeDate").value;
   if (!dateVal) {

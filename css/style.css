@@ -451,6 +451,7 @@ tr:hover td { background: rgba(61,90,254,.05); }
    numbers) on tablet-ish widths - the table scrolls horizontally inside .table-wrap
    instead of squeezing columns below a legible width. */
 .reg-table { table-layout: fixed; min-width: 760px; }
+.reg-table td { vertical-align: middle; }
 .reg-table th:nth-child(1),  .reg-table td:nth-child(1)  { width: 7%; }
 .reg-table th:nth-child(2),  .reg-table td:nth-child(2)  { width: 12%; }
 .reg-table th:nth-child(3),  .reg-table td:nth-child(3)  { width: 17%; }
@@ -461,24 +462,17 @@ tr:hover td { background: rgba(61,90,254,.05); }
 .reg-table th:nth-child(8),  .reg-table td:nth-child(8)  { width: 12%; }
 .reg-table th:nth-child(9),  .reg-table td:nth-child(9)  { width: 9%; }
 .reg-table th:nth-child(10), .reg-table td:nth-child(10) { width: 6%; }
-.reg-table th:nth-child(11), .reg-table td:nth-child(11) { width: 6%; }
+.reg-table th:nth-child(11), .reg-table td:nth-child(11) { width: 8%; }
+.reg-table td button { white-space: nowrap; word-break: normal; }
 
 /* ---------- Dim other rows while a detail panel is open ---------- */
 #regGroupsContainer.has-open-detail tr {
   transition: opacity .15s, filter .15s;
 }
 #regGroupsContainer.has-open-detail tr:not(.detail-active):not(.detail-panel-row) {
-  position: relative;
+  opacity: .15;
+  filter: grayscale(.4);
   pointer-events: none;
-}
-#regGroupsContainer.has-open-detail tr:not(.detail-active):not(.detail-panel-row) td {
-  position: relative;
-}
-#regGroupsContainer.has-open-detail tr:not(.detail-active):not(.detail-panel-row) td::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(10, 14, 30, .78);
 }
 #regGroupsContainer.has-open-detail tr.detail-active td {
   background: var(--bg);
