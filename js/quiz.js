@@ -4,10 +4,7 @@ import {
   getFirestore, doc, getDoc, updateDoc, collection, getDocs, addDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
-import { applyStoredTheme, toggleTheme, formatDateTime, downloadICS } from "./util.js";
-
-applyStoredTheme();
-document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+import { formatDateTime, downloadICS } from "./util.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);

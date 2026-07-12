@@ -8,8 +8,6 @@
 </head>
 <body>
 
-<button class="theme-toggle" id="themeBtn" title="Prepnúť tému" style="position:fixed; top:16px; right:16px; z-index:50;">☀️</button>
-
 <div class="container" id="loginContainer">
   <p style="text-align:center; text-transform:uppercase; letter-spacing:.12em; font-size:.72rem; font-weight:600; color:var(--muted); margin-bottom:6px;">AI &amp; Financie · Admin</p>
   <div class="card" id="loginCard" style="max-width:420px; margin-inline:auto;">
@@ -34,30 +32,30 @@
 <div id="dashboard" class="admin-layout" style="display:none;">
 
   <aside class="admin-sidebar">
-    <div class="admin-sidebar-brand">🤖💶 AI &amp; Financie</div>
+    <div class="admin-sidebar-brand">AI &amp; Financie</div>
 
     <div class="admin-nav-group">
       <div class="admin-nav-label">Prehľad</div>
-      <button class="admin-nav-item active" data-tab="registrations"><span>👥</span> Prihlásení</button>
-      <button class="admin-nav-item" data-tab="results"><span>🧾</span> Výsledky</button>
-      <button class="admin-nav-item" data-tab="stats"><span>📊</span> Štatistiky</button>
-      <button class="admin-nav-item" data-tab="log"><span>📜</span> Log</button>
+      <button class="admin-nav-item active" data-tab="registrations">Prihlásení</button>
+      <button class="admin-nav-item" data-tab="results">Výsledky</button>
+      <button class="admin-nav-item" data-tab="stats">Štatistiky</button>
+      <button class="admin-nav-item" data-tab="log">Log</button>
     </div>
 
     <div class="admin-nav-group">
       <div class="admin-nav-label">Nastavenia</div>
-      <button class="admin-nav-item" data-tab="terms"><span>📅</span> Termíny</button>
-      <button class="admin-nav-item" data-tab="workshopDetails"><span>📋</span> Detaily workshopu</button>
-      <button class="admin-nav-item" data-tab="questions"><span>❓</span> Otázky</button>
-      <button class="admin-nav-item" data-tab="email"><span>✉️</span> Email</button>
-      <button class="admin-nav-item" data-tab="landing"><span>🌐</span> Landing page</button>
-      <button class="admin-nav-item" data-tab="materials"><span>📚</span> Materiály</button>
+      <button class="admin-nav-item" data-tab="terms">Termíny</button>
+      <button class="admin-nav-item" data-tab="workshopDetails">Detaily workshopu</button>
+      <button class="admin-nav-item" data-tab="questions">Otázky</button>
+      <button class="admin-nav-item" data-tab="email">Email</button>
+      <button class="admin-nav-item" data-tab="landing">Landing page</button>
+      <button class="admin-nav-item" data-tab="materials">Materiály</button>
     </div>
 
     <div class="admin-sidebar-footer">
       <a href="index.html">Registrácia</a>
       <a href="kviz.html">Kvíz</a>
-      <a href="#" id="logoutLink">↩️ Odhlásiť sa</a>
+      <a href="#" id="logoutLink">Odhlásiť sa</a>
     </div>
   </aside>
 
@@ -75,9 +73,10 @@
           <button id="exportCsvBtn" class="secondary">⬇️ Export CSV</button>
         </div>
         <p style="color:var(--muted); font-size:.82rem;">
-          <span class="badge-pill" style="background:#dcf7ec;color:#106c53;">zelená</span> = oba kvízy hotové ·
-          <span class="badge-pill" style="background:#fff3d6;color:#93650a;">žltá</span> = len vstupný kvíz ·
-          <span class="badge-pill" style="background:#e0e6f5;color:#3d4a6b;">modrá</span> = náhradník (waitlist)
+          <span class="badge-pill status-confirmed">potvrdená</span> = potvrdená registrácia ·
+          <span class="badge-pill status-waitlist">náhradník</span> = čakacia listina ·
+          <span class="badge-pill quiz-one">1 kvíz</span> = jeden kvíz hotový ·
+          <span class="badge-pill quiz-two">2 kvízy</span> = oba kvízy hotové
         </p>
 
         <div class="card" id="addRegistrantForm" style="display:none; background:var(--bg); margin-bottom:16px;">

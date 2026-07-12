@@ -4,10 +4,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getFirestore, collection, getDocs, doc, getDoc, runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { generateCode, formatDateTime, downloadICS, applyStoredTheme, toggleTheme } from "./util.js";
-
-applyStoredTheme();
-document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+import { generateCode, formatDateTime, downloadICS } from "./util.js";
 
 function wireOtherToggle(radioOrCheckboxId, textId) {
   const el = document.getElementById(radioOrCheckboxId);

@@ -116,22 +116,3 @@ export function exportResultsCSV(registrations) {
   downloadCSV("vysledky_kvizov.csv", header, rows);
 }
 
-function syncThemeToggleIcons(theme) {
-  document.querySelectorAll(".theme-toggle").forEach((btn) => {
-    btn.textContent = theme === "dark" ? "☀️" : "🌙";
-  });
-}
-
-export function applyStoredTheme() {
-  const theme = localStorage.getItem("theme") || "dark";
-  document.documentElement.setAttribute("data-theme", theme);
-  syncThemeToggleIcons(theme);
-}
-
-export function toggleTheme() {
-  const current = document.documentElement.getAttribute("data-theme") || "dark";
-  const next = current === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem("theme", next);
-  syncThemeToggleIcons(next);
-}

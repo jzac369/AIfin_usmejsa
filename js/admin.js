@@ -7,12 +7,9 @@ import {
 import {
   getFirestore, collection, getDocs, doc, setDoc, getDoc, updateDoc, deleteDoc, runTransaction, addDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, generateCode, applyStoredTheme, toggleTheme } from "./util.js";
+import { formatDateTime, exportRegistrationsCSV, exportResultsCSV, generateCode } from "./util.js";
 import { ENTRY_QUIZ, EXIT_QUIZ } from "./questions.js";
 import { initEmailjs, sendConfirmationEmail } from "./email.js";
-
-applyStoredTheme();
-document.getElementById("themeBtn").addEventListener("click", toggleTheme);
 
 initEmailjs();
 
@@ -167,19 +164,22 @@ function renderTermsEditorList() {
     const wrap = document.createElement("div");
     wrap.className = "card";
     wrap.style.background = "rgba(255,255,255,.02)";
-    wrap.style.marginBottom = "16px";
     wrap.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <label style="margin:0;">${t.id ? `Termín (obsadené: ${t.booked}/10)` : "Nový termín"}</label>
-        <button type="button" class="danger delete-term-btn" style="padding:4px 10px; font-size:.75rem;">🗑️ Vymazať</button>
+        <label style="margin:0; font-size:.85rem;">${t.id ? `Termín (obsadené: ${t.booked}/10)` : "Nový termín"}</label>
+        <button type="button" class="danger delete-term-btn" style="padding:3px 8px; font-size:.72rem;">Vymazať</button>
       </div>
       <input type="datetime-local" id="termInput${i}" value="${localValue}" />
-      <label>Počet miest na čakacej listine (náhradníci)</label>
-      <input type="number" min="0" id="waitlistInput${i}" value="${full?.waitlistCapacity || 0}" style="max-width:140px;" />
-      ${t.id ? `<p style="color:var(--muted); font-size:.8rem; margin:4px 0 10px;">Na čakacej listine momentálne: ${t.waitlistCount}/${full?.waitlistCapacity || 0}</p>` : ""}
-      <label class="switch-row" style="font-weight:400; margin-top:10px;">
+      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:6px;">
+        <div style="flex:1; min-width:120px;">
+          <label style="margin:0 0 4px;">Náhradníci (čakacia listina)</label>
+          <input type="number" min="0" id="waitlistInput${i}" value="${full?.waitlistCapacity || 0}" />
+        </div>
+        ${t.id ? `<p style="color:var(--muted); font-size:.74rem; margin:0 0 8px;">Na čak. listine: ${t.waitlistCount}/${full?.waitlistCapacity || 0}</p>` : ""}
+      </div>
+      <label class="switch-row" style="font-weight:400; margin-top:8px; font-size:.82rem;">
         <span class="switch"><input type="checkbox" id="visibleInput${i}" ${visible ? "checked" : ""} /><span class="slider"></span></span>
-        Viditeľný v kalendári (ponúkaný na verejnej registrácii)
+        Viditeľný v kalendári
       </label>
     `;
     wrap.querySelector(".delete-term-btn").addEventListener("click", () => deleteTerm(i));
@@ -375,10 +375,13 @@ document.getElementById("submitNewRegistrantBtn").addEventListener("click", asyn
   }
 });
 
-function rowClass(r) {
-  if (r.status === "waitlist") return "row-waitlist";
-  if (r.entryQuizDone && r.exitQuizDone) return "row-done";
-  if (r.entryQuizDone) return "row-partial";
+function quizBadgeHtml(r) {
+  if (r.entryQuizDone && r.exitQuizDone) {
+    return `<span class="badge-pill quiz-two">2 kvízy</span>`;
+  }
+  if (r.entryQuizDone || r.exitQuizDone) {
+    return `<span class="badge-pill quiz-one">1 kvíz</span>`;
+  }
   return "";
 }
 
@@ -418,7 +421,6 @@ function renderTable() {
   function fillRows(tbody, rowsList) {
     rowsList.forEach((r) => {
       const tr = document.createElement("tr");
-      tr.className = rowClass(r);
       const statusLabel = r.status === "cancelled" ? "zrušená" : r.status === "waitlist" ? "náhradník" : "potvrdená";
       const statusBadgeClass = r.status === "cancelled" ? "pending" : r.status === "waitlist" ? "status-waitlist" : "status-confirmed";
       const warningIcon = r.blockedChangeAttempt
@@ -431,9 +433,10 @@ function renderTable() {
         <td data-label="Telefón">${r.phone}</td>
         <td data-label="Vstup.">${r.entryScore != null ? r.entryScore + "/" + (r.entryTotal || 8) : "–"}</td>
         <td data-label="Výst.">${r.exitScore != null ? r.exitScore + "/" + (r.exitTotal || 8) : "–"}</td>
-        <td data-label="Stav"><span class="badge-pill ${statusBadgeClass}">${statusLabel}</span>${warningIcon}</td>
+        <td data-label="Stav"><div class="badge-row"><span class="badge-pill ${statusBadgeClass}">${statusLabel}</span>${quizBadgeHtml(r)}</div>${warningIcon}</td>
+        <td data-label="Pozn." class="notes-cell" title="${(r.adminNotes || "").replace(/"/g, "&quot;")}">${r.adminNotes || ""}</td>
         <td data-label="Prišiel"><label class="switch"><input type="checkbox" class="attended-check" ${r.attended ? "checked" : ""} /><span class="slider"></span></label></td>
-        <td data-label=""><button type="button" class="secondary detail-toggle-btn">🔍 Detaily</button></td>
+        <td data-label=""><button type="button" class="secondary detail-toggle-btn">Detaily</button></td>
       `;
 
       tr.querySelector(".attended-check").addEventListener("change", async (e) => {
@@ -452,7 +455,7 @@ function renderTable() {
     <thead>
       <tr>
         <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th>
-        <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Prišiel</th><th></th>
+        <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Pozn.</th><th>Prišiel</th><th></th>
       </tr>
     </thead>
   `;
@@ -506,7 +509,7 @@ function openDetailPanel(tr, r) {
   const panelRow = document.createElement("tr");
   panelRow.className = "detail-panel-row";
   const td = document.createElement("td");
-  td.colSpan = 9;
+  td.colSpan = 10;
   td.innerHTML = `
     <div class="card" style="margin:8px 0;">
       <p style="color:var(--muted); font-size:.85rem; margin-top:0;">
