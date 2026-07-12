@@ -138,33 +138,42 @@
         <div class="pie-grid">
           <div class="pie-box">
             <h4>Vstup vs. výstup (priemer z 8)</h4>
-            <canvas id="scoreChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="scoreChart"></canvas></div>
           </div>
           <div class="pie-box">
             <h4>Obsadenosť termínov</h4>
-            <canvas id="capacityChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="capacityChart"></canvas></div>
           </div>
           <div class="pie-box">
             <h4>Skúsenosti s AI</h4>
-            <canvas id="aiExpChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="aiExpChart"></canvas></div>
           </div>
           <div class="pie-box">
             <h4>Odkiaľ sa dozvedeli o workshope</h4>
-            <canvas id="sourceChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="sourceChart"></canvas></div>
           </div>
           <div class="pie-box">
             <h4>Digitálne zručnosti</h4>
-            <canvas id="digitalSkillChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="digitalSkillChart"></canvas></div>
           </div>
           <div class="pie-box">
             <h4>Dôvod účasti</h4>
-            <canvas id="reasonChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="reasonChart"></canvas></div>
           </div>
           <div class="pie-box">
             <h4>Typ finančných rozhodnutí</h4>
-            <canvas id="financeTopicChart" width="220" height="220"></canvas>
+            <div class="chart-frame"><canvas id="financeTopicChart"></canvas></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div id="chartModal" class="chart-modal" style="display:none;">
+      <div class="chart-modal-backdrop"></div>
+      <div class="chart-modal-content">
+        <button type="button" class="chart-modal-close" id="chartModalClose" aria-label="Zavrieť">✕</button>
+        <h3 id="chartModalTitle"></h3>
+        <div class="chart-modal-canvas-wrap"><canvas id="chartModalCanvas"></canvas></div>
       </div>
     </div>
 

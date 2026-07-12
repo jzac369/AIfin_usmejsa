@@ -1015,6 +1015,46 @@ document.getElementById("exportResultsCsvBtn").addEventListener("click", () => e
 // ---------- STATS ----------
 let scoreChartInstance, capacityChartInstance, aiExpChartInstance, sourceChartInstance, digitalSkillChartInstance, reasonChartInstance, financeTopicChartInstance;
 
+// ---------- CHART ZOOM MODAL ----------
+let modalChartInstance = null;
+
+function openChartModal(sourceChart, title) {
+  document.getElementById("chartModalTitle").textContent = title;
+  modalChartInstance?.destroy();
+  modalChartInstance = new Chart(document.getElementById("chartModalCanvas"), {
+    type: sourceChart.config.type,
+    data: sourceChart.config.data,
+    options: {
+      ...sourceChart.config.options,
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        ...sourceChart.config.options.plugins,
+        legend: { position: "bottom", labels: { boxWidth: 14, font: { size: 12 } } }
+      }
+    }
+  });
+  document.getElementById("chartModal").style.display = "flex";
+}
+
+function closeChartModal() {
+  document.getElementById("chartModal").style.display = "none";
+  modalChartInstance?.destroy();
+  modalChartInstance = null;
+}
+
+function wireChartZoom(chart, title) {
+  // onclick (not addEventListener) so re-rendering the same canvas across
+  // live updates replaces the handler instead of stacking duplicates.
+  chart.canvas.onclick = () => openChartModal(chart, title);
+}
+
+document.getElementById("chartModalClose").addEventListener("click", closeChartModal);
+document.querySelector(".chart-modal-backdrop").addEventListener("click", closeChartModal);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.getElementById("chartModal").style.display !== "none") closeChartModal();
+});
+
 async function loadPageViewStats() {
   const snap = await getDocs(collection(db, "pageViews"));
   const today = new Date().toISOString().slice(0, 10);
@@ -1050,7 +1090,7 @@ async function renderStats() {
   const exitScores = registrations.filter((r) => r.exitScore != null).map((r) => r.exitScore);
   const avg = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
 
-  const pieOptions = { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 9 } } } } };
+  const pieOptions = { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 9 } } } } };
   const pieColors = ["#3d5afe", "#00c2a8", "#f5a623", "#e5484d", "#8b9dff", "#6be7c4"];
 
   scoreChartInstance?.destroy();
@@ -1062,6 +1102,7 @@ async function renderStats() {
     },
     options: { ...pieOptions, scales: { y: { beginAtZero: true, max: 8 } } }
   });
+  wireChartZoom(scoreChartInstance, "Vstup vs. výstup (priemer z 8)");
 
   capacityChartInstance?.destroy();
   capacityChartInstance = new Chart(document.getElementById("capacityChart"), {
@@ -1075,6 +1116,7 @@ async function renderStats() {
     },
     options: { ...pieOptions, scales: { x: { stacked: true, ticks: { font: { size: 8 } } }, y: { stacked: true, beginAtZero: true } } }
   });
+  wireChartZoom(capacityChartInstance, "Obsadenosť termínov");
 
   const countBy = (key) => {
     const map = {};
@@ -1096,6 +1138,7 @@ async function renderStats() {
     data: { labels: Object.keys(aiExpMap), datasets: [{ data: Object.values(aiExpMap), backgroundColor: pieColors }] },
     options: pieOptions
   });
+  wireChartZoom(aiExpChartInstance, "Skúsenosti s AI");
 
   const sourceMap = countBy("source");
   sourceChartInstance?.destroy();
@@ -1104,6 +1147,7 @@ async function renderStats() {
     data: { labels: Object.keys(sourceMap), datasets: [{ data: Object.values(sourceMap), backgroundColor: pieColors }] },
     options: pieOptions
   });
+  wireChartZoom(sourceChartInstance, "Odkiaľ sa dozvedeli o workshope");
 
   const digitalSkillMap = countBy("digitalSkill");
   digitalSkillChartInstance?.destroy();
@@ -1112,6 +1156,7 @@ async function renderStats() {
     data: { labels: Object.keys(digitalSkillMap), datasets: [{ data: Object.values(digitalSkillMap), backgroundColor: pieColors }] },
     options: pieOptions
   });
+  wireChartZoom(digitalSkillChartInstance, "Digitálne zručnosti");
 
   const reasonMap = countBy("reason");
   reasonChartInstance?.destroy();
@@ -1120,6 +1165,7 @@ async function renderStats() {
     data: { labels: Object.keys(reasonMap), datasets: [{ data: Object.values(reasonMap), backgroundColor: pieColors }] },
     options: pieOptions
   });
+  wireChartZoom(reasonChartInstance, "Dôvod účasti");
 
   const financeTopicMap = countBy("financeTopic");
   financeTopicChartInstance?.destroy();
@@ -1128,6 +1174,7 @@ async function renderStats() {
     data: { labels: Object.keys(financeTopicMap), datasets: [{ data: Object.values(financeTopicMap), backgroundColor: pieColors }] },
     options: pieOptions
   });
+  wireChartZoom(financeTopicChartInstance, "Typ finančných rozhodnutí");
 }
 
 // ---------- QUESTION EDITOR ----------

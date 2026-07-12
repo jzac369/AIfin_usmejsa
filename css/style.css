@@ -789,7 +789,67 @@ tr:hover td { background: rgba(61,90,254,.05); }
 }
 .pie-box { text-align: center; min-width: 0; }
 .pie-box h4 { font-size: .82rem; color: var(--muted); margin-bottom: 8px; }
-.pie-box canvas { margin: 0 auto; max-width: 100%; height: auto; }
+
+/* Fixed-aspect-ratio box drives Chart.js's responsive resizing (responsive:true
+   + maintainAspectRatio:true) so charts stay perfectly round at any container
+   width instead of being squeezed into an oval on narrow/tablet layouts. */
+.chart-frame {
+  position: relative;
+  width: 100%;
+  max-width: 170px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  cursor: zoom-in;
+}
+.chart-frame canvas { width: 100% !important; height: 100% !important; }
+
+.chart-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.chart-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 25, 40, .6);
+}
+.chart-modal-content {
+  position: relative;
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 28px;
+  max-width: min(560px, 90vw);
+  width: 100%;
+  text-align: center;
+}
+.chart-modal-content h3 { margin: 0 0 16px; font-size: 1.1rem; }
+.chart-modal-canvas-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+.chart-modal-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+.chart-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text);
+  font-size: .95rem;
+  line-height: 1;
+}
+.chart-modal-close:hover { background: var(--danger); color: #fff; }
 
 .alert-box {
   padding: 10px 14px;
