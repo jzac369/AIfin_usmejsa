@@ -439,6 +439,7 @@ async function finishQuiz(set) {
   }
 
   Object.assign(registration, updates);
+  logParticipantEvent("quiz-completed", { set: activeSet, score, total: set.length });
   quizCard.style.display = "none";
   resultCard.style.display = "block";
   document.getElementById("resultBadge").innerHTML =

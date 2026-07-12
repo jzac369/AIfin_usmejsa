@@ -372,15 +372,15 @@ button.btn-print:hover { background: var(--bg); }
   font-size: .9rem;
   color: var(--text);
 }
-/* Distinct color per workshop day, so it's obvious at a glance which day a group belongs to */
-.term-chip-0 { background: #e8ecff; border-color: #c2caf7; color: #2c3fd0; }
-.term-chip-1 { background: #dcf7ec; border-color: #a8e9cd; color: #106c53; }
-.term-chip-2 { background: #fff3d6; border-color: #f5da9e; color: #93650a; }
-.term-chip-3 { background: #ffe4e4; border-color: #f5b3b3; color: #9c1c1f; }
-.term-chip-4 { background: #f1e4ff; border-color: #d7bdf7; color: #6a2ec2; }
-.term-chip-5 { background: #dff3fb; border-color: #a9e0f2; color: #0b6e93; }
-.term-chip-6 { background: #ffe8f2; border-color: #f5b8d6; color: #ad1a63; }
-.term-chip-7 { background: #eef1e0; border-color: #cfd9a6; color: #5c6b1f; }
+
+/* Groups all participants of one workshop day into a single bordered box */
+.term-group-box {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 22px;
+  background: rgba(61,90,254,.02);
+}
 
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
 
@@ -446,8 +446,11 @@ tr:hover td { background: rgba(61,90,254,.05); }
   font-size: .74rem;
 }
 
-/* ---------- Fixed, shared column widths across every workshop-day table ---------- */
-.reg-table { table-layout: fixed; }
+/* ---------- Fixed, shared column widths across every workshop-day table ----------
+   min-width keeps every column readable (no awkward mid-word wrapping like phone
+   numbers) on tablet-ish widths - the table scrolls horizontally inside .table-wrap
+   instead of squeezing columns below a legible width. */
+.reg-table { table-layout: fixed; min-width: 760px; }
 .reg-table th:nth-child(1),  .reg-table td:nth-child(1)  { width: 7%; }
 .reg-table th:nth-child(2),  .reg-table td:nth-child(2)  { width: 12%; }
 .reg-table th:nth-child(3),  .reg-table td:nth-child(3)  { width: 17%; }
@@ -465,9 +468,17 @@ tr:hover td { background: rgba(61,90,254,.05); }
   transition: opacity .15s, filter .15s;
 }
 #regGroupsContainer.has-open-detail tr:not(.detail-active):not(.detail-panel-row) {
-  opacity: .15;
-  filter: grayscale(.4);
+  position: relative;
   pointer-events: none;
+}
+#regGroupsContainer.has-open-detail tr:not(.detail-active):not(.detail-panel-row) td {
+  position: relative;
+}
+#regGroupsContainer.has-open-detail tr:not(.detail-active):not(.detail-panel-row) td::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 14, 30, .78);
 }
 #regGroupsContainer.has-open-detail tr.detail-active td {
   background: var(--bg);

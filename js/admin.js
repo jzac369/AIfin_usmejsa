@@ -55,8 +55,9 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("logoutLink").addEventListener("click", (e) => {
+document.getElementById("logoutLink").addEventListener("click", async (e) => {
   e.preventDefault();
+  await logAudit("admin-logout", "", { email: currentAdminEmail() });
   signOut(auth);
 });
 
@@ -473,17 +474,17 @@ function renderTable() {
     </thead>
   `;
 
-  groupKeys.forEach((key, groupIndex) => {
+  groupKeys.forEach((key) => {
     const term = termMap[key];
     const allRows = groups[key].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     const mainRows = allRows.filter((r) => r.status !== "waitlist");
     const waitlistRows = allRows.filter((r) => r.status === "waitlist");
 
     const groupWrap = document.createElement("div");
-    groupWrap.style.marginBottom = "28px";
+    groupWrap.className = "term-group-box";
     groupWrap.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-        <div class="term-date-chip term-chip-${groupIndex % 8}">
+        <div class="term-date-chip">
           ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
           <span style="color:var(--muted); font-weight:400;">(${allRows.length} ${allRows.length === 1 ? "účastník" : allRows.length < 5 ? "účastníci" : "účastníkov"})</span>
         </div>
@@ -752,6 +753,12 @@ function printAttendanceSheet(term, rows) {
       <thead><tr><th>#</th><th>Meno a priezvisko</th><th>Mesto</th><th>Kód</th><th>Podpis</th></tr></thead>
       <tbody>
         ${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${r.fullName}</td><td>${r.city}</td><td>${r.code}</td><td></td></tr>`).join("")}
+      </tbody>
+    </table>
+    <table style="margin-top:32px; width:60%;">
+      <thead><tr><th>Lektor – meno a priezvisko</th><th>Podpis lektora</th></tr></thead>
+      <tbody>
+        <tr><td style="height:40px;"></td><td style="height:40px;"></td></tr>
       </tbody>
     </table>
   `;
@@ -1235,8 +1242,12 @@ function describeAuditEntry(e) {
       return `Vymazané záznamy logu staršie ako ${d.beforeDate} (${d.count} záznamov)`;
     case "admin-login":
       return `Prihlásenie do admin zóny (${d.email || e.adminEmail || "?"})`;
+    case "admin-logout":
+      return `Odhlásenie z admin zóny (${d.email || e.adminEmail || "?"})`;
     case "login":
       return "Účastník sa prihlásil do svojej zóny cez kód";
+    case "quiz-completed":
+      return `Účastník dokončil ${d.set === "entry" ? "vstupný" : "výstupný"} kvíz (${d.score}/${d.total})`;
     case "blocked-change-attempt":
       return `⚠️ Zablokovaný pokus o ${d.type === "cancel" ? "zrušenie" : "presun termínu"} menej ako 48 hodín pred workshopom`;
     default:

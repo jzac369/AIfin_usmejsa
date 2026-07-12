@@ -68,7 +68,7 @@ service cloud.firestore {
     match /auditLog/{entryId} {
       allow read: if isAdmin();
       allow create: if isAdmin() ||
-                      (request.resource.data.action in ['login', 'blocked-change-attempt'] &&
+                      (request.resource.data.action in ['login', 'blocked-change-attempt', 'quiz-completed'] &&
                        request.resource.data.keys().hasOnly(['action','code','details','adminEmail','timestamp']));
       allow delete: if isAdmin();
     }
