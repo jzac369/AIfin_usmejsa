@@ -61,6 +61,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Denné počítadlo návštev registračnej stránky (dokument ID = dátum YYYY-MM-DD).
+    // Verejnosť smie iba pripočítať k poľu "views" pri načítaní stránky, čítať
+    // súhrn môže len admin v štatistikách.
+    match /pageViews/{dateId} {
+      allow read: if isAdmin();
+      allow write: if request.resource.data.keys().hasOnly(['views']);
+    }
+
     // Interný log zmien - čítať ho môže len admin. Zapisovať môže admin
     // čokoľvek; účastník (bez prihlásenia) smie zapísať LEN záznam o svojom
     // prihlásení kódom alebo o zablokovanom pokuse o zmenu/zrušenie tesne

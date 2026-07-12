@@ -61,6 +61,15 @@ document.getElementById("logoutLink").addEventListener("click", async (e) => {
   signOut(auth);
 });
 
+document.getElementById("reportBugLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const description = prompt("Popíšte prosím chybu, ktorú ste našli:");
+  if (!description || !description.trim()) return;
+  await logAudit("bug-report", "", { description: description.trim() });
+  alert("Ďakujeme, chyba bola zaznamenaná do logu.");
+  if (document.getElementById("tab-log").style.display !== "none") await loadAuditLog();
+});
+
 onAuthStateChanged(auth, (user) => {
   const loginContainer = document.getElementById("loginContainer");
   const dashboard = document.getElementById("dashboard");
@@ -96,12 +105,13 @@ async function loadAll() {
   terms = termsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => new Date(a.datetime || 0) - new Date(b.datetime || 0));
   registrations = regsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-  renderAlerts();
+  updateRegistrationStatusIndicator();
+  await renderAlerts();
   renderTermsEditor();
   await loadQuizRestrictionSetting();
   renderTermFilter();
   renderTable();
-  renderStats();
+  await renderStats();
   renderResultsTable();
   await loadQuestionsIntoEditor();
   await loadEmailTemplate();
@@ -111,8 +121,20 @@ async function loadAll() {
   await loadAuditLog();
 }
 
+// ---------- REGISTRATION STATUS INDICATOR ----------
+function updateRegistrationStatusIndicator() {
+  const anyOpen = terms.some((t) => t.visibleInCalendar !== false);
+  const dot = document.getElementById("regStatusDot");
+  const text = document.getElementById("regStatusText");
+  dot.classList.toggle("active", anyOpen);
+  dot.classList.toggle("inactive", !anyOpen);
+  text.textContent = anyOpen ? "Registrácia aktívna" : "Registrácia uzavretá";
+}
+
 // ---------- ALERTS ----------
-function renderAlerts() {
+let alertRotationTimer = null;
+
+async function renderAlerts() {
   const panel = document.getElementById("alertsPanel");
   const now = Date.now();
   const alerts = [];
@@ -143,9 +165,36 @@ function renderAlerts() {
     alerts.push({ urgent: false, text: `📝 ${notDoneEntry} prihlásených účastníkov ešte nevyplnilo vstupný kvíz.` });
   }
 
-  panel.innerHTML = alerts
-    .map((a) => `<div class="alert-box${a.urgent ? " urgent" : ""}">${a.text}</div>`)
-    .join("");
+  const { todayViews, monthViews } = await loadPageViewStats();
+  alerts.push({ urgent: false, text: `📊 Registračnú stránku si dnes pozrelo ${todayViews} ľudí (tento mesiac ${monthViews}).` });
+
+  clearInterval(alertRotationTimer);
+  alertRotationTimer = null;
+
+  if (alerts.length === 0) {
+    panel.innerHTML = "";
+    return;
+  }
+
+  panel.innerHTML = `<div class="alert-box alert-rotator"></div>`;
+  const box = panel.querySelector(".alert-rotator");
+  let idx = 0;
+  const showAlert = (i) => {
+    box.classList.toggle("urgent", alerts[i].urgent);
+    box.textContent = alerts[i].text;
+  };
+  showAlert(idx);
+
+  if (alerts.length > 1) {
+    alertRotationTimer = setInterval(() => {
+      box.style.opacity = "0";
+      setTimeout(() => {
+        idx = (idx + 1) % alerts.length;
+        showAlert(idx);
+        box.style.opacity = "1";
+      }, 350);
+    }, 10000);
+  }
 }
 
 // ---------- TERMS EDITOR ----------
@@ -881,18 +930,35 @@ document.getElementById("exportResultsCsvBtn").addEventListener("click", () => e
 // ---------- STATS ----------
 let scoreChartInstance, capacityChartInstance, aiExpChartInstance, sourceChartInstance, digitalSkillChartInstance, reasonChartInstance, financeTopicChartInstance;
 
-function renderStats() {
+async function loadPageViewStats() {
+  const snap = await getDocs(collection(db, "pageViews"));
+  const today = new Date().toISOString().slice(0, 10);
+  const thisMonth = today.slice(0, 7);
+  let todayViews = 0;
+  let monthViews = 0;
+  snap.forEach((d) => {
+    const views = d.data().views || 0;
+    if (d.id === today) todayViews = views;
+    if (d.id.startsWith(thisMonth)) monthViews += views;
+  });
+  return { todayViews, monthViews };
+}
+
+async function renderStats() {
   const total = registrations.length;
   const entryDone = registrations.filter((r) => r.entryQuizDone).length;
   const exitDone = registrations.filter((r) => r.exitQuizDone).length;
   const capacityTotal = terms.reduce((acc, t) => acc + (t.capacity || 10), 0);
   const capacityBooked = terms.reduce((acc, t) => acc + (t.booked || 0), 0);
+  const { todayViews, monthViews } = await loadPageViewStats();
 
   document.getElementById("statBoxes").innerHTML = `
     <div class="stat-box"><div class="num">${total}</div><div class="lbl">Prihlásených</div></div>
     <div class="stat-box"><div class="num">${capacityBooked}/${capacityTotal || 50}</div><div class="lbl">Obsadenosť termínov</div></div>
     <div class="stat-box"><div class="num">${entryDone}</div><div class="lbl">Vstupný kvíz hotový</div></div>
     <div class="stat-box"><div class="num">${exitDone}</div><div class="lbl">Výstupný kvíz hotový</div></div>
+    <div class="stat-box"><div class="num">${todayViews}</div><div class="lbl">Zobrazení stránky dnes</div></div>
+    <div class="stat-box"><div class="num">${monthViews}</div><div class="lbl">Zobrazení stránky tento mesiac</div></div>
   `;
 
   const entryScores = registrations.filter((r) => r.entryScore != null).map((r) => r.entryScore);
@@ -1294,6 +1360,8 @@ function describeAuditEntry(e) {
       return `Prihlásenie do admin zóny (${d.email || e.adminEmail || "?"})`;
     case "admin-logout":
       return `Odhlásenie z admin zóny (${d.email || e.adminEmail || "?"})`;
+    case "bug-report":
+      return `🐞 Nahlásená chyba: ${d.description || "?"}`;
     case "login":
       return "Účastník sa prihlásil do svojej zóny cez kód";
     case "quiz-completed":

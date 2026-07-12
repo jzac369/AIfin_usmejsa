@@ -2,7 +2,7 @@ import { firebaseConfig } from "./firebase-config.js";
 import { initEmailjs, sendConfirmationEmail } from "./email.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, doc, getDoc, runTransaction
+  getFirestore, collection, getDocs, doc, getDoc, setDoc, runTransaction, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { generateCode, formatDateTime, downloadICS, ICONS } from "./util.js";
 
@@ -24,6 +24,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 initEmailjs();
+
+// Jednoduchý denný počítadlo návštev registračnej stránky (pre prehľad v admin zóne).
+(async function logPageView() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    await setDoc(doc(db, "pageViews", today), { views: increment(1) }, { merge: true });
+  } catch {
+    // sledovanie návštevnosti nesmie zhodiť samotnú stránku
+  }
+})();
 
 let terms = [];
 let selectedTermId = null;
