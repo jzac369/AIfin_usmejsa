@@ -1238,6 +1238,40 @@ function renderQuestionsEditor() {
   editor.appendChild(addBtn);
 }
 
+document.getElementById("importQuestionsBtn").addEventListener("click", () => {
+  const errBox = document.getElementById("questionsImportError");
+  errBox.style.display = "none";
+  const raw = document.getElementById("questionsImportInput").value.trim();
+  if (!raw) {
+    errBox.textContent = "Vlož najprv JSON pole otázok.";
+    errBox.style.display = "block";
+    return;
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    errBox.textContent = "Neplatný JSON - skontroluj zátvorky a úvodzovky.";
+    errBox.style.display = "block";
+    return;
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    errBox.textContent = "JSON musí byť neprázdne pole otázok.";
+    errBox.style.display = "block";
+    return;
+  }
+  for (const [i, q] of parsed.entries()) {
+    if (typeof q.q !== "string" || !Array.isArray(q.options) || q.options.length < 2 || typeof q.correct !== "number" || q.correct < 0 || q.correct >= q.options.length) {
+      errBox.textContent = `Otázka ${i + 1} má neplatný tvar (potrebuje "q", pole "options" a platný index "correct").`;
+      errBox.style.display = "block";
+      return;
+    }
+  }
+  questionSets[activeQSet] = parsed;
+  renderQuestionsEditor();
+  document.getElementById("questionsImportInput").value = "";
+});
+
 document.getElementById("saveQuestionsBtn").addEventListener("click", async () => {
   await setDoc(doc(db, "quizQuestions", "entry"), { questions: questionSets.entry });
   await setDoc(doc(db, "quizQuestions", "exit"), { questions: questionSets.exit });

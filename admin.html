@@ -228,7 +228,20 @@
     <div id="tab-questions" class="tab-panel" style="display:none;">
       <div class="card">
         <h2>Editácia otázok kvízu</h2>
-        <p style="color:var(--muted)">Uprav znenie otázok a možností pre vstupný a výstupný kvíz (8 otázok, 4 možnosti). Označ, ktorá možnosť je správna.</p>
+        <p style="color:var(--muted)">Uprav znenie otázok a možností pre vstupný a výstupný kvíz. Označ, ktorá možnosť je správna.</p>
+
+        <details style="margin-bottom:18px;">
+          <summary style="cursor:pointer; font-weight:600;">Importovať otázky z JSON (nahradí celú aktuálne vybranú sadu)</summary>
+          <div style="margin-top:10px;">
+            <label for="questionsImportInput">Vlož JSON pole otázok pre aktuálne vybranú sadu (vstupný/výstupný podľa záložky nižšie)</label>
+            <textarea id="questionsImportInput" rows="6" placeholder='[{"q":"...","options":["...","...","..."],"correct":0}, ...]'></textarea>
+            <div id="questionsImportError" class="alert error" style="display:none;"></div>
+            <div class="actions">
+              <button type="button" id="importQuestionsBtn" class="secondary">Importovať do editora</button>
+            </div>
+          </div>
+        </details>
+
         <div class="tabs">
           <button class="active" data-qset="entry">Vstupný kvíz</button>
           <button data-qset="exit">Výstupný kvíz</button>
