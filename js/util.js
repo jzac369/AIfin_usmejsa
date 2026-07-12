@@ -56,7 +56,7 @@ export function exportRegistrationsCSV(registrations, terms) {
   const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
   const header = [
     "Kód", "Meno a priezvisko", "Mesto", "Email", "Telefón", "Termín",
-    "Zdroj informácie", "Zariadenia", "Skúsenosti s AI", "Digitálne zručnosti", "Dôvod účasti",
+    "Zdroj informácie", "Zariadenia", "Skúsenosti s AI", "Digitálne zručnosti", "Dôvod účasti", "Typ finančných rozhodnutí",
     "Vstupný kvíz (%)", "Výstupný kvíz (%)", "Registrované"
   ];
   const rows = registrations.map((r) => {
@@ -73,6 +73,7 @@ export function exportRegistrationsCSV(registrations, terms) {
       r.survey?.aiExperience ?? "",
       r.survey?.digitalSkill ?? "",
       r.survey?.reason ?? "",
+      r.survey?.financeTopic ?? "",
       r.entryScore != null ? Math.round((r.entryScore / 8) * 100) : "",
       r.exitScore != null ? Math.round((r.exitScore / 8) * 100) : "",
       r.createdAt ? new Date(r.createdAt).toLocaleString("sk-SK") : ""

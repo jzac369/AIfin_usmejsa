@@ -36,7 +36,7 @@ service cloud.firestore {
       allow list: if isAdmin();
       allow update: if isAdmin() ||
                       request.resource.data.diff(resource.data).affectedKeys()
-                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryAnswers','exitAnswers','status','termId','feedback','blockedChangeAttempt']);
+                        .hasOnly(['entryQuizDone','exitQuizDone','entryScore','exitScore','entryTotal','exitTotal','entryAnswers','exitAnswers','status','termId','feedback','blockedChangeAttempt']);
       allow delete: if isAdmin();
     }
 
@@ -70,6 +70,7 @@ service cloud.firestore {
       allow create: if isAdmin() ||
                       (request.resource.data.action in ['login', 'blocked-change-attempt'] &&
                        request.resource.data.keys().hasOnly(['action','code','details','adminEmail','timestamp']));
+      allow delete: if isAdmin();
     }
   }
 }

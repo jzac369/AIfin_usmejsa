@@ -146,8 +146,9 @@ function showWelcome() {
   document.getElementById("profileAvatar").textContent =
     `${(registration.firstName || registration.fullName || "?")[0] || "?"}${(registration.lastName || "")[0] || ""}`.toUpperCase();
   document.getElementById("welcomeTermInfo").textContent = currentTerm
-    ? `Váš kód: ${registration.code} · Váš termín: ${formatDateTime(currentTerm.datetime)}`
-    : `Váš kód: ${registration.code}`;
+    ? `Váš termín: ${formatDateTime(currentTerm.datetime)}`
+    : "";
+  document.getElementById("welcomeCodeChip").textContent = `Kód: ${registration.code}`;
 
   const badges = document.getElementById("statusBadges");
   const statusLabel = registration.status === "cancelled" ? "zrušená" : registration.status === "waitlist" ? "náhradník" : "potvrdená";

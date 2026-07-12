@@ -18,6 +18,7 @@ function wireOtherToggle(radioOrCheckboxId, textId) {
 wireOtherToggle("sourceOther", "sourceOtherText");
 wireOtherToggle("devicesOther", "devicesOtherText");
 wireOtherToggle("reasonOther", "reasonOtherText");
+wireOtherToggle("financeTopicOther", "financeTopicOtherText");
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -159,8 +160,12 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
   if (reason === "Iné" && document.getElementById("reasonOtherText").value.trim()) {
     reason = `Iné: ${document.getElementById("reasonOtherText").value.trim()}`;
   }
+  let financeTopic = document.querySelector('input[name="financeTopic"]:checked')?.value;
+  if (financeTopic === "Iné" && document.getElementById("financeTopicOtherText").value.trim()) {
+    financeTopic = `Iné: ${document.getElementById("financeTopicOtherText").value.trim()}`;
+  }
 
-  if (!firstName || !lastName || !city || !email || !phone || !source || !aiExperience || !digitalSkill || !reason) {
+  if (!firstName || !lastName || !city || !email || !phone || !source || !aiExperience || !digitalSkill || !reason || !financeTopic) {
     errBox.textContent = "Prosím vyplňte všetky povinné polia a dotazník.";
     errBox.style.display = "block";
     return;
@@ -219,7 +224,7 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
         status,
         attended: false,
         adminNotes: "",
-        survey: { source, devices, aiExperience, digitalSkill, reason },
+        survey: { source, devices, aiExperience, digitalSkill, reason, financeTopic },
         entryQuizDone: false,
         exitQuizDone: false,
         entryScore: null,

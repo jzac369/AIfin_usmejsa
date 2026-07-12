@@ -150,6 +150,10 @@
             <h4>Dôvod účasti</h4>
             <canvas id="reasonChart" width="220" height="220"></canvas>
           </div>
+          <div class="pie-box">
+            <h4>Typ finančných rozhodnutí</h4>
+            <canvas id="financeTopicChart" width="220" height="220"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -157,7 +161,16 @@
     <div id="tab-log" class="tab-panel" style="display:none;">
       <div class="card">
         <h2>Interný log zmien</h2>
-        <p style="color:var(--muted)">Záznam všetkých úprav a vymazaní registrácií vrátane emailu admina, ktorý zmenu vykonal.</p>
+        <p style="color:var(--muted)">Záznam všetkých úprav a vymazaní registrácií, zmien termínov a prihlásení do admin zóny, vrátane emailu admina, ktorý zmenu vykonal.</p>
+        <div class="search-row">
+          <div class="search-filters">
+            <label style="margin:0;">Vymazať záznamy staršie ako</label>
+            <input type="date" id="logPurgeDate" />
+          </div>
+          <div class="search-actions">
+            <button type="button" id="purgeLogBtn" class="danger">Vymazať staré záznamy</button>
+          </div>
+        </div>
         <div class="table-wrap" id="auditLogContainer"></div>
       </div>
     </div>

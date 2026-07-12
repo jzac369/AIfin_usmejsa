@@ -213,7 +213,10 @@ document.getElementById("addTermBtn").addEventListener("click", () => {
 
 async function loadQuizRestrictionSetting() {
   const snap = await getDoc(doc(db, "settings", "quizRestriction"));
-  document.getElementById("restrictQuizDayCheck").checked = snap.exists() ? !!snap.data().restrictToWorkshopDay : false;
+  const value = snap.exists() ? !!snap.data().restrictToWorkshopDay : false;
+  const checkbox = document.getElementById("restrictQuizDayCheck");
+  checkbox.checked = value;
+  checkbox.dataset.prevValue = String(value);
 }
 
 function toLocalInputValue(iso) {
@@ -239,14 +242,22 @@ document.getElementById("saveTermsBtn").addEventListener("click", async () => {
     };
     if (t.id) {
       await setDoc(doc(db, "terms", t.id), payload, { merge: true });
+      await logAudit("term-update", "", { termId: t.id, datetime: payload.datetime, waitlistCapacity, visibleInCalendar });
     } else {
-      await addDoc(collection(db, "terms"), payload);
+      const newTermRef = await addDoc(collection(db, "terms"), payload);
+      await logAudit("term-create", "", { termId: newTermRef.id, datetime: payload.datetime, waitlistCapacity, visibleInCalendar });
     }
   }
 
+  const prevRestriction = document.getElementById("restrictQuizDayCheck").dataset.prevValue === "true";
+  const newRestriction = document.getElementById("restrictQuizDayCheck").checked;
   await setDoc(doc(db, "settings", "quizRestriction"), {
-    restrictToWorkshopDay: document.getElementById("restrictQuizDayCheck").checked
+    restrictToWorkshopDay: newRestriction
   });
+  if (prevRestriction !== newRestriction) {
+    await logAudit("quiz-restriction-change", "", { restrictToWorkshopDay: newRestriction });
+  }
+  document.getElementById("restrictQuizDayCheck").dataset.prevValue = String(newRestriction);
 
   document.getElementById("termsSaveMsg").style.display = "block";
   setTimeout(() => (document.getElementById("termsSaveMsg").style.display = "none"), 3000);
@@ -462,7 +473,7 @@ function renderTable() {
     </thead>
   `;
 
-  groupKeys.forEach((key) => {
+  groupKeys.forEach((key, groupIndex) => {
     const term = termMap[key];
     const allRows = groups[key].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
     const mainRows = allRows.filter((r) => r.status !== "waitlist");
@@ -472,13 +483,13 @@ function renderTable() {
     groupWrap.style.marginBottom = "28px";
     groupWrap.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-        <div class="term-date-chip">
+        <div class="term-date-chip term-chip-${groupIndex % 8}">
           ${term ? formatDateTime(term.datetime) : "Bez priradeného termínu"}
           <span style="color:var(--muted); font-weight:400;">(${allRows.length} ${allRows.length === 1 ? "účastník" : allRows.length < 5 ? "účastníci" : "účastníkov"})</span>
         </div>
         <button class="btn-print print-attendance-btn" type="button">Prezenčná listina</button>
       </div>
-      <table>${tableHeadHtml}<tbody class="main-rows-body"></tbody></table>
+      <table class="reg-table">${tableHeadHtml}<tbody class="main-rows-body"></tbody></table>
     `;
 
     groupWrap.querySelector(".print-attendance-btn").addEventListener("click", () => {
@@ -492,7 +503,7 @@ function renderTable() {
       waitlistWrap.className = "waitlist-section";
       waitlistWrap.innerHTML = `
         <h4>🕒 Náhradníci – čakacia listina (${waitlistRows.length})</h4>
-        <table>${tableHeadHtml}<tbody class="waitlist-rows-body"></tbody></table>
+        <table class="reg-table">${tableHeadHtml}<tbody class="waitlist-rows-body"></tbody></table>
       `;
       fillRows(waitlistWrap.querySelector(".waitlist-rows-body"), waitlistRows);
       groupWrap.appendChild(waitlistWrap);
@@ -527,7 +538,8 @@ function openDetailPanel(tr, r) {
         <strong>Zdroj:</strong> ${r.survey?.source ?? "–"} &nbsp;·&nbsp;
         <strong>Zariadenia:</strong> ${(r.survey?.devices ?? []).join(", ") || "–"} &nbsp;·&nbsp;
         <strong>Skúsenosti AI:</strong> ${r.survey?.aiExperience ?? "–"} &nbsp;·&nbsp;
-        <strong>Dôvod:</strong> ${r.survey?.reason ?? "–"}
+        <strong>Dôvod:</strong> ${r.survey?.reason ?? "–"} &nbsp;·&nbsp;
+        <strong>Finančná téma:</strong> ${r.survey?.financeTopic ?? "–"}
       </p>
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:0 16px;">
         <div><label>Meno</label><input type="text" id="edit-firstName" value="${r.firstName || ""}" /></div>
@@ -810,7 +822,7 @@ function renderResultsTable() {
 document.getElementById("exportResultsCsvBtn").addEventListener("click", () => exportResultsCSV(registrations));
 
 // ---------- STATS ----------
-let scoreChartInstance, capacityChartInstance, aiExpChartInstance, sourceChartInstance, digitalSkillChartInstance, reasonChartInstance;
+let scoreChartInstance, capacityChartInstance, aiExpChartInstance, sourceChartInstance, digitalSkillChartInstance, reasonChartInstance, financeTopicChartInstance;
 
 function renderStats() {
   const total = registrations.length;
@@ -898,6 +910,14 @@ function renderStats() {
   reasonChartInstance = new Chart(document.getElementById("reasonChart"), {
     type: "pie",
     data: { labels: Object.keys(reasonMap), datasets: [{ data: Object.values(reasonMap), backgroundColor: pieColors }] },
+    options: pieOptions
+  });
+
+  const financeTopicMap = countBy("financeTopic");
+  financeTopicChartInstance?.destroy();
+  financeTopicChartInstance = new Chart(document.getElementById("financeTopicChart"), {
+    type: "pie",
+    data: { labels: Object.keys(financeTopicMap), datasets: [{ data: Object.values(financeTopicMap), backgroundColor: pieColors }] },
     options: pieOptions
   });
 }
@@ -1205,6 +1225,14 @@ function describeAuditEntry(e) {
       return `Ručne odoslaný potvrdzujúci email na adresu ${d.email || "?"}`;
     case "term-delete":
       return `Termín workshopu bol natrvalo vymazaný`;
+    case "term-create":
+      return `Vytvorený nový termín workshopu (${formatDateTime(d.datetime)})`;
+    case "term-update":
+      return `Upravený termín workshopu (${formatDateTime(d.datetime)}, náhradníci: ${d.waitlistCapacity}, viditeľný: ${d.visibleInCalendar ? "áno" : "nie"})`;
+    case "quiz-restriction-change":
+      return `Zmenené nastavenie: kvíz ${d.restrictToWorkshopDay ? "obmedzený len na deň workshopu" : "dostupný kedykoľvek"}`;
+    case "log-purge":
+      return `Vymazané záznamy logu staršie ako ${d.beforeDate} (${d.count} záznamov)`;
     case "admin-login":
       return `Prihlásenie do admin zóny (${d.email || e.adminEmail || "?"})`;
     case "login":
@@ -1243,3 +1271,32 @@ async function loadAuditLog() {
   container.innerHTML = "";
   container.appendChild(table);
 }
+
+document.getElementById("purgeLogBtn").addEventListener("click", async () => {
+  const dateVal = document.getElementById("logPurgeDate").value;
+  if (!dateVal) {
+    alert("Najprv vyberte dátum.");
+    return;
+  }
+  const cutoff = new Date(dateVal).getTime();
+  const snap = await getDocs(collection(db, "auditLog"));
+  const toDelete = snap.docs.filter((d) => (d.data().timestamp || 0) < cutoff);
+
+  if (toDelete.length === 0) {
+    alert("Žiadne záznamy staršie ako zvolený dátum sa nenašli.");
+    return;
+  }
+  if (!confirm(`Naozaj natrvalo vymazať ${toDelete.length} záznamov logu starších ako ${dateVal}? Táto akcia sa nedá vrátiť späť.`)) return;
+
+  const btn = document.getElementById("purgeLogBtn");
+  btn.disabled = true;
+  try {
+    for (const d of toDelete) {
+      await deleteDoc(doc(db, "auditLog", d.id));
+    }
+    await logAudit("log-purge", "", { beforeDate: dateVal, count: toDelete.length });
+    await loadAuditLog();
+  } finally {
+    btn.disabled = false;
+  }
+});
