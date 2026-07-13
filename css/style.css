@@ -1118,6 +1118,11 @@ footer.site-footer {
      were leaking through and squeezing each value into a sliver a few percent
      of the screen wide - wrapping text one letter per line. Undo that here. */
   .reg-table td { width: auto !important; }
+  /* Likewise, the tablet horizontal-scroll min-width (below) has nothing to
+     do with the mobile card layout - left applied here it forces the whole
+     card-style table to be 760px wide on a phone screen, pushing each row's
+     label off the left edge and forcing sideways scrolling to read it. */
+  .reg-table { min-width: 0 !important; }
 }
 
 /* ---------- General mobile/tablet polish ---------- */
@@ -1147,6 +1152,15 @@ footer.site-footer {
 @media (max-width: 780px) {
   .admin-nav-group { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
   .admin-nav-item { white-space: nowrap; }
+}
+
+/* On true phone widths the horizontal-scroll nav is awkward to use (small
+   swipe target, items hidden off-screen with no visual hint). Let items wrap
+   onto multiple lines instead - taller menu, but everything is tappable
+   without scrolling sideways. Tablet keeps the single scrollable row above. */
+@media (max-width: 480px) {
+  .admin-nav-group { flex-wrap: wrap; overflow-x: visible; padding-bottom: 0; }
+  .admin-nav-item { white-space: normal; flex: 1 1 auto; text-align: center; }
 }
 
 @media (max-width: 900px) and (min-width: 721px) {
