@@ -191,6 +191,28 @@ button, .btn { font-weight: 500; }
   color: rgba(255,255,255,.7);
 }
 
+/* display:contents makes this wrapper invisible to layout on desktop/tablet -
+   its children (status pill, nav groups, footer) keep flowing directly as
+   flex items of .admin-sidebar exactly as before. Only the phone breakpoint
+   below turns it into an actual collapsible panel behind the hamburger. */
+.admin-sidebar-body { display: contents; }
+
+.admin-sidebar-toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,.14);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+  margin: 0 16px 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-sidebar-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
+
 .reg-status-indicator {
   display: flex;
   align-items: center;
@@ -1155,12 +1177,21 @@ footer.site-footer {
 }
 
 /* On true phone widths the horizontal-scroll nav is awkward to use (small
-   swipe target, items hidden off-screen with no visual hint). Let items wrap
-   onto multiple lines instead - taller menu, but everything is tappable
-   without scrolling sideways. Tablet keeps the single scrollable row above. */
+   swipe target, items hidden off-screen with no visual hint). Hide the menu
+   behind a hamburger toggle instead; tapping it reveals every item stacked
+   in a normal vertical list. Tablet keeps the single scrollable row above. */
 @media (max-width: 480px) {
-  .admin-nav-group { flex-wrap: wrap; overflow-x: visible; padding-bottom: 0; }
-  .admin-nav-item { white-space: normal; flex: 1 1 auto; text-align: center; }
+  .admin-sidebar-toggle { display: inline-flex; }
+  .admin-sidebar-body {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+  }
+  .admin-sidebar.mobile-nav-open .admin-sidebar-body { display: flex; }
+  .reg-status-indicator { margin: 0 16px 16px; }
+  .admin-nav-group { flex-direction: column; flex-wrap: nowrap; overflow-x: visible; padding-bottom: 0; width: 100%; }
+  .admin-nav-label { display: block; }
+  .admin-nav-item { width: 100%; white-space: normal; text-align: left; border-radius: 0; }
 }
 
 @media (max-width: 900px) and (min-width: 721px) {

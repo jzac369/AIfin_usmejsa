@@ -131,7 +131,22 @@ document.querySelectorAll(".admin-nav-item").forEach((btn) => {
     btn.classList.add("active");
     document.querySelectorAll(".tab-panel").forEach((p) => (p.style.display = "none"));
     document.getElementById(`tab-${btn.dataset.tab}`).style.display = "block";
+    closeMobileNav();
   });
+});
+
+// ---------- MOBILE HAMBURGER MENU (phone widths only) ----------
+const adminSidebar = document.getElementById("adminSidebar");
+const mobileNavToggle = document.getElementById("mobileNavToggle");
+
+function closeMobileNav() {
+  adminSidebar.classList.remove("mobile-nav-open");
+  mobileNavToggle.setAttribute("aria-expanded", "false");
+}
+
+mobileNavToggle.addEventListener("click", () => {
+  const isOpen = adminSidebar.classList.toggle("mobile-nav-open");
+  mobileNavToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
 // ---------- LOAD DATA ----------
