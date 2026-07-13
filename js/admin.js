@@ -149,6 +149,8 @@ mobileNavToggle.addEventListener("click", () => {
   mobileNavToggle.setAttribute("aria-expanded", String(isOpen));
 });
 
+document.getElementById("mobileNavBackdrop").addEventListener("click", closeMobileNav);
+
 // ---------- LOAD DATA ----------
 async function loadAll() {
   const [termsSnap, regsSnap] = await Promise.all([

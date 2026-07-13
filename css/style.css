@@ -194,24 +194,33 @@ button, .btn { font-weight: 500; }
 /* display:contents makes this wrapper invisible to layout on desktop/tablet -
    its children (status pill, nav groups, footer) keep flowing directly as
    flex items of .admin-sidebar exactly as before. Only the phone breakpoint
-   below turns it into an actual collapsible panel behind the hamburger. */
+   below turns it into an off-canvas drawer behind the hamburger. */
 .admin-sidebar-body { display: contents; }
 
 .admin-sidebar-toggle {
   display: none;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  margin: 8px 0 8px 10px;
+  padding: 0;
   background: rgba(255,255,255,.14);
   border: 1px solid rgba(255,255,255,.3);
+  border-radius: 6px;
   color: #fff;
-  margin: 0 16px 16px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: .85rem;
-  font-weight: 600;
   cursor: pointer;
 }
-.admin-sidebar-toggle svg { width: 18px; height: 18px; flex-shrink: 0; }
+.admin-sidebar-toggle svg { width: 14px; height: 14px; }
+
+.mobile-nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 30, .5);
+  z-index: 998;
+}
 
 .reg-status-indicator {
   display: flex;
@@ -1178,20 +1187,38 @@ footer.site-footer {
 
 /* On true phone widths the horizontal-scroll nav is awkward to use (small
    swipe target, items hidden off-screen with no visual hint). Hide the menu
-   behind a hamburger toggle instead; tapping it reveals every item stacked
-   in a normal vertical list. Tablet keeps the single scrollable row above. */
+   behind a small hamburger button instead; tapping it slides a drawer in
+   from the left with every item stacked vertically, and picking an item (or
+   tapping the backdrop) slides it back out. Tablet is untouched. */
 @media (max-width: 480px) {
   .admin-sidebar-toggle { display: inline-flex; }
   .admin-sidebar-body {
-    display: none;
+    display: flex;
     flex-direction: column;
-    width: 100%;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: -320px;
+    width: 78%;
+    max-width: 300px;
+    background: linear-gradient(180deg, #0d1a4d 0%, var(--primary-dark) 45%, var(--primary) 100%);
+    box-shadow: 0 0 32px rgba(0,0,0,.35);
+    z-index: 999;
+    padding: 18px 0;
+    overflow-y: auto;
+    transition: left .25s ease;
   }
-  .admin-sidebar.mobile-nav-open .admin-sidebar-body { display: flex; }
+  .admin-sidebar.mobile-nav-open .admin-sidebar-body { left: 0; }
+  .admin-sidebar.mobile-nav-open + .mobile-nav-backdrop { display: block; }
   .reg-status-indicator { margin: 0 16px 16px; }
   .admin-nav-group { flex-direction: column; flex-wrap: nowrap; overflow-x: visible; padding-bottom: 0; width: 100%; }
   .admin-nav-label { display: block; }
   .admin-nav-item { width: 100%; white-space: normal; text-align: left; border-radius: 0; }
+  .admin-sidebar-footer { width: 100%; }
+}
+
+@media (max-width: 480px) and (prefers-reduced-motion: reduce) {
+  .admin-sidebar-body { transition: none; }
 }
 
 @media (max-width: 900px) and (min-width: 721px) {
