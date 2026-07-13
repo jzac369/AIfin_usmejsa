@@ -1112,6 +1112,12 @@ footer.site-footer {
   .table-wrap table td:empty { display: none; }
   .table-wrap table td input.admin-notes,
   .table-wrap table td textarea { text-align: left; }
+
+  /* The desktop/tablet .reg-table column percentages (Telefón, Mesto, Pozn. ...)
+     have higher CSS specificity than the generic mobile reset above, so they
+     were leaking through and squeezing each value into a sliver a few percent
+     of the screen wide - wrapping text one letter per line. Undo that here. */
+  .reg-table td { width: auto !important; }
 }
 
 /* ---------- General mobile/tablet polish ---------- */
