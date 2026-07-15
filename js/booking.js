@@ -288,7 +288,10 @@ function showSuccess(code, status) {
     if (term) downloadICS(term, workshopDetails);
   });
 
-  successCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Registrácia je väčšinou ďaleko dole (za hero/partnermi/dôvodmi/CTA), takže
+  // plynulý scroll na potvrdenie by trval sekundy a pôsobil by, akoby sa
+  // "zasekol" na pôvodnom mieste. Instant preskočí priamo na kartu.
+  successCard.scrollIntoView({ behavior: "instant", block: "start" });
 }
 
 loadHero();
