@@ -151,7 +151,7 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
 
   if (!selectedTermId) {
     termErrBox.style.display = "block";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    termErrBox.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
 
@@ -260,7 +260,7 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
   } catch (err) {
     errBox.textContent = err.message || "Nastala chyba pri registrácii. Skúste to prosím znova.";
     errBox.style.display = "block";
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    errBox.scrollIntoView({ behavior: "smooth", block: "center" });
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "Záväzne sa prihlásiť";
@@ -288,7 +288,7 @@ function showSuccess(code, status) {
     if (term) downloadICS(term, workshopDetails);
   });
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  successCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 loadHero();
