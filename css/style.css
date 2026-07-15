@@ -182,15 +182,6 @@ button, .btn { font-weight: 500; }
   margin: 4px 16px 20px;
   padding: 10px 12px;
 }
-.admin-sidebar-brand-sub {
-  display: block;
-  margin-top: 8px;
-  font-weight: 600;
-  font-size: .68rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,.7);
-}
 
 /* display:contents makes this wrapper invisible to layout on desktop/tablet -
    its children (status pill, nav groups, footer) keep flowing directly as
@@ -919,6 +910,18 @@ tr:hover td { background: rgba(61,90,254,.05); }
 }
 .alerts-row #alertsPanel { flex: 1; min-width: 0; max-width: 640px; }
 .alerts-row #alertsPanel .alert-box { margin-bottom: 0; }
+.admin-workshop-name {
+  flex-shrink: 0;
+  max-width: 260px;
+  font-size: .85rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
 .admin-welcome {
   flex-shrink: 0;
   margin-left: auto;
@@ -932,6 +935,7 @@ tr:hover td { background: rgba(61,90,254,.05); }
 @media (max-width: 780px) {
   .alerts-row { flex-direction: column; }
   .alerts-row #alertsPanel { max-width: none; width: 100%; }
+  .admin-workshop-name { max-width: none; width: 100%; }
   .admin-welcome { margin-left: 0; }
 }
 

@@ -1383,14 +1383,12 @@ async function loadLandingContent() {
   const data = snap.exists() ? snap.data() : {};
   document.getElementById("heroTitleInput").value = data.title || "";
   document.getElementById("heroSubtitleInput").value = data.subtitle || "";
-  document.getElementById("heroPromoInput").value = data.promo || "";
 }
 
 document.getElementById("saveLandingBtn").addEventListener("click", async () => {
   await setDoc(doc(db, "settings", "landingPage"), {
     title: document.getElementById("heroTitleInput").value,
-    subtitle: document.getElementById("heroSubtitleInput").value,
-    promo: document.getElementById("heroPromoInput").value
+    subtitle: document.getElementById("heroSubtitleInput").value
   });
   document.getElementById("landingSaveMsg").style.display = "block";
   setTimeout(() => (document.getElementById("landingSaveMsg").style.display = "none"), 3000);
