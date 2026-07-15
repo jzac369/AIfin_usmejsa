@@ -10,7 +10,7 @@ Statická stránka (HTML/CSS/vanilla JS, žiadny build krok) pre bezplatný
 workshop **„Ako sa nenechať oklamať: AI ako pomocník pri finančných
 rozhodnutiach"** pre seniorov. Organizuje **Akadémia digitálneho vzdelávania
 DigiStart**, v spolupráci s **Centrum Usmejsa**, finančne podporené
-**Národnou bankou Slovenska**. Workshop trvá cca 2,5 hod.
+**Nadáciou Národnej banky Slovenska**. Workshop trvá cca 2,5 hod.
 
 - **Repo:** https://github.com/jzac369/AIfin_usmejsa (vlastník: `jzac369`)
 - **Live URL:** https://bezpecneonline.digistart.sk (custom doména, `CNAME` v repe)
