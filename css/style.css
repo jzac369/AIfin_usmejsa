@@ -140,10 +140,10 @@ button, .btn { font-weight: 500; }
 }
 .partners-row {
   display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
-  gap: 32px;
+  gap: 40px;
 }
 .partners-row img {
-  height: 56px; width: auto; max-width: 220px;
+  height: 73px; width: auto; max-width: 460px;
   object-fit: contain;
   mix-blend-mode: multiply;
 }
@@ -340,10 +340,14 @@ header.topbar {
 header.topbar .brand {
   display: flex;
   align-items: center;
+  background: #fff;
+  padding: 6px 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
 }
 
 header.topbar .brand img {
-  height: 34px;
+  height: 38px;
   width: auto;
   display: block;
 }
@@ -1176,6 +1180,8 @@ footer.site-footer {
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .certificate { padding: 22px; }
   .certificate .name { font-size: 1.4rem; }
+  .partners-row { gap: 24px; }
+  .partners-row img { height: 52px; max-width: 90vw; }
 }
 
 /* Sidebar nav on narrow screens: horizontally scrollable single row
