@@ -990,8 +990,8 @@ tr:hover td { background: rgba(61,90,254,.05); }
   cursor: pointer;
   font-size: .95rem;
 }
-.quiz-option:hover { border-color: var(--primary); }
-.quiz-option.picked { border-color: var(--primary); background: rgba(61,90,254,.1); }
+.quiz-option:hover { border-color: var(--primary); background: var(--bg); color: var(--text); }
+.quiz-option.picked { border-color: var(--primary); background: rgba(23,55,94,.1); }
 
 .result-hero {
   text-align: center;
