@@ -947,13 +947,16 @@ async function deleteRegistration(r) {
 function printAttendanceSheet(term, rows) {
   const title = term ? formatDateTime(term.datetime) : "Workshop";
   const area = document.getElementById("attendancePrintArea");
+  const minRows = 12;
+  const numberedRows = 10;
+  const printRows = Array.from({ length: Math.max(minRows, rows.length) }, (_, i) => rows[i] || null);
   area.innerHTML = `
     <h1>Prezenčná listina – Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“</h1>
     <p>Termín: ${title}</p>
     <table>
       <thead><tr><th>#</th><th>Meno a priezvisko</th><th>Mesto</th><th>Kód</th><th>Podpis</th></tr></thead>
       <tbody>
-        ${rows.map((r, i) => `<tr><td>${i + 1}</td><td>${r.fullName}</td><td>${r.city}</td><td>${r.code}</td><td></td></tr>`).join("")}
+        ${printRows.map((r, i) => `<tr><td>${i < numberedRows ? i + 1 : ""}</td><td>${r ? r.fullName : ""}</td><td>${r ? r.city : ""}</td><td>${r ? r.code : ""}</td><td></td></tr>`).join("")}
       </tbody>
     </table>
     <table style="margin-top:32px; width:60%;">
