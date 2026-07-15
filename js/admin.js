@@ -384,18 +384,29 @@ document.getElementById("saveTermsBtn").addEventListener("click", async () => {
     if (!val) continue;
     const waitlistCapacity = parseInt(document.getElementById(`waitlistInput${i}`).value, 10) || 0;
     const visibleInCalendar = document.getElementById(`visibleInput${i}`).checked;
-    const payload = {
-      datetime: new Date(val).toISOString(),
-      capacity: 10,
-      booked: t.booked,
-      waitlistCapacity,
-      waitlistCount: t.waitlistCount,
-      visibleInCalendar
-    };
     if (t.id) {
+      // booked/waitlistCount zámerne nie sú v tomto payloade: editableTerms je
+      // snapshot z posledného prihlásenia do admina a nesleduje ho žiadny
+      // live listener, takže by tu prepísal medzičasom správne (živé)
+      // hodnoty spravované registráciami/zrušeniami/mazaním nazad na starú
+      // hodnotu. Termíny editor smie meniť len dátum/kapacitu čak. listiny/viditeľnosť.
+      const payload = {
+        datetime: new Date(val).toISOString(),
+        capacity: 10,
+        waitlistCapacity,
+        visibleInCalendar
+      };
       await setDoc(doc(db, "terms", t.id), payload, { merge: true });
       await logAudit("term-update", "", { termId: t.id, datetime: payload.datetime, waitlistCapacity, visibleInCalendar });
     } else {
+      const payload = {
+        datetime: new Date(val).toISOString(),
+        capacity: 10,
+        booked: 0,
+        waitlistCapacity,
+        waitlistCount: 0,
+        visibleInCalendar
+      };
       const newTermRef = await addDoc(collection(db, "terms"), payload);
       await logAudit("term-create", "", { termId: newTermRef.id, datetime: payload.datetime, waitlistCapacity, visibleInCalendar });
     }
