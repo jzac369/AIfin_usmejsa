@@ -49,7 +49,7 @@ async function loadWorkshopDetails() {
 }
 
 const DEFAULT_HERO = {
-  title: "Ako sa nenechať oklamať",
+  title: "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach",
   subtitle: "Workshop o bezpečnom používaní umelej inteligencie a rozpoznávaní podvodov",
   promo: "Miesta sú obmedzené, aby sa každému účastníkovi ušlo dosť pozornosti a času na otázky."
 };
