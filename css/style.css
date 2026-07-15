@@ -55,12 +55,6 @@ body.warm-theme h1, body.warm-theme h2, body.warm-theme h3 {
   font-family: "Fraunces", Georgia, "Iowan Old Style", serif;
   font-weight: 600;
 }
-body.warm-theme .icon-circle {
-  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
-  background: var(--accent); color: #fff;
-  display: inline-flex; align-items: center; justify-content: center;
-}
-body.warm-theme .icon-circle svg { width: 22px; height: 22px; }
 body.warm-theme .icon-inline {
   width: 1.1em; height: 1.1em; vertical-align: -0.18em; margin-right: 6px; display: inline-block;
 }
