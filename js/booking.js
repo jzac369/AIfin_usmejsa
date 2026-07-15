@@ -288,10 +288,13 @@ function showSuccess(code, status) {
     if (term) downloadICS(term, workshopDetails);
   });
 
-  // Registrácia je väčšinou ďaleko dole (za hero/partnermi/dôvodmi/CTA), takže
-  // plynulý scroll na potvrdenie by trval sekundy a pôsobil by, akoby sa
-  // "zasekol" na pôvodnom mieste. Instant preskočí priamo na kartu.
-  successCard.scrollIntoView({ behavior: "instant", block: "start" });
+  // Registrácia je väčšinou ďaleko dole (za hero/partnermi/dôvodmi/CTA) - namiesto
+  // scrollovania NA ňu presunieme celú sekciu s potvrdením hneď pod hlavičku,
+  // takže je vidieť úplne navrchu stránky bez akéhokoľvek scrollovania.
+  const ribbon = document.querySelector(".title-ribbon");
+  const section = document.getElementById("registrationSection");
+  if (ribbon && section) ribbon.insertAdjacentElement("afterend", section);
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 loadHero();
