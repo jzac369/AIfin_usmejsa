@@ -39,13 +39,13 @@ let terms = [];
 let selectedTermId = null;
 let workshopDetails = null;
 
+const DEFAULT_LOCATION = "Centrum Usmejsa, Kláštorská 471/44, 921 01 Piešťany";
+
 async function loadWorkshopDetails() {
   const snap = await getDoc(doc(db, "settings", "workshopDetails"));
   workshopDetails = snap.exists() ? snap.data() : null;
-  if (workshopDetails?.location) {
-    const el = document.getElementById("heroLocation");
-    if (el) el.innerHTML = `${ICONS.location}${workshopDetails.location}`;
-  }
+  const el = document.getElementById("heroLocation");
+  if (el) el.innerHTML = `${ICONS.location}${workshopDetails?.location || DEFAULT_LOCATION}`;
 }
 
 const DEFAULT_HERO = {

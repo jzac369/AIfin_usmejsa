@@ -382,7 +382,6 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
   max-width: 780px;
   margin-inline: auto;
 }
-.hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
 
 /* ---------- Split hero (text + illustration), used on the public landing page ---------- */
 .hero-split {
