@@ -50,8 +50,7 @@ async function loadWorkshopDetails() {
 
 const DEFAULT_HERO = {
   title: "Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach",
-  subtitle: "Workshop o bezpečnom používaní umelej inteligencie a rozpoznávaní podvodov",
-  promo: "Miesta sú obmedzené, aby sa každému účastníkovi ušlo dosť pozornosti a času na otázky."
+  subtitle: "Workshop o bezpečnom používaní umelej inteligencie a rozpoznávaní podvodov"
 };
 
 function openRegistrationSection() {
@@ -69,11 +68,9 @@ async function loadHero() {
     const data = snap.exists() ? snap.data() : {};
     document.getElementById("heroTitle").textContent = data.title || DEFAULT_HERO.title;
     document.getElementById("heroSubtitle").textContent = data.subtitle || DEFAULT_HERO.subtitle;
-    document.getElementById("heroPromo").textContent = data.promo || DEFAULT_HERO.promo;
   } catch {
     document.getElementById("heroTitle").textContent = DEFAULT_HERO.title;
     document.getElementById("heroSubtitle").textContent = DEFAULT_HERO.subtitle;
-    document.getElementById("heroPromo").textContent = DEFAULT_HERO.promo;
   }
 }
 
