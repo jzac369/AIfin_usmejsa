@@ -1354,14 +1354,47 @@ document.getElementById("saveQuestionsBtn").addEventListener("click", async () =
 // ---------- EMAIL TEMPLATE ----------
 const DEFAULT_EMAIL_TEMPLATE = {
   subject: "Potvrdenie registrácie – Workshop AI a financie",
-  body: "<p>Dobrý deň {{meno}},</p><p>ďakujeme za registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.</p><p>Váš termín: {{termin}}<br>Váš prihlasovací kód (uschovajte si ho): <strong>{{kod}}</strong></p><p>Tešíme sa na Vás!</p>"
+  body: "<p>Dobrý deň, {{meno}},</p><p>ďakujeme za Vašu registráciu na workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“.</p><p>Veľmi nás teší, že ste sa rozhodli zúčastniť nášho workshopu. Veríme, že si z neho odnesiete množstvo praktických rád, ktoré Vám pomôžu bezpečnejšie sa pohybovať na internete, lepšie využívať umelú inteligenciu a s väčšou istotou sa rozhodovať pri každodenných finančných situáciách.</p><p><strong>Vaša registrácia je potvrdená.</strong></p><p><strong>Termín workshopu:</strong><br>{{termin}}</p><p><strong>Váš prihlasovací kód:</strong><br>{{kod}}</p><p>Prosíme, uschovajte si tento kód. Budete ho potrebovať, ak si budete chcieť neskôr zobraziť svoju registráciu, zmeniť termín alebo svoju účasť zrušiť. Tieto zmeny môžete jednoducho vykonať na stránke <a href=\"https://bezpecneonline.digistart.sk\">bezpecneonline.digistart.sk</a> po zadaní Vášho prihlasovacieho kódu {{kod}}.</p><p><strong>Potrebujem si priniesť mobil alebo tablet?</strong></p><p>Nie, nie je to potrebné. Počas workshopu Vám radi zapožičiame tablet, na ktorom si budete môcť všetko prakticky vyskúšať. Ak však máte vlastný mobilný telefón alebo tablet, odporúčame priniesť si ho so sebou. Budete si môcť jednotlivé postupy vyskúšať priamo na zariadení, ktoré používate každý deň, čo Vám uľahčí ich neskoršie používanie aj doma.</p><p>Zároveň pripomíname, že workshop je určený aj pre úplných začiatočníkov. Nemusíte mať žiadne predchádzajúce skúsenosti s umelou inteligenciou ani s modernými technológiami. Všetko si vysvetlíme pokojne, zrozumiteľne a krok za krokom. Predpokladaná dĺžka workshopu: približne 2,5 hodiny.</p><p><strong>Miesto konania workshopu:</strong><br>Centrum Usmejsa<br>Kláštorská 471/44<br>921 01 Piešťany</p><p>Ak by ste mali akékoľvek otázky alebo potrebovali s niečím poradiť ešte pred workshopom, neváhajte nás kontaktovať. Radi Vám pomôžeme. Tešíme sa na osobné stretnutie s Vami a veríme, že spolu strávime príjemné, zaujímavé a užitočné dopoludnie.</p><p>S prianím pekného dňa,<br>Tím DigiStart<br>Akadémia digitálneho vzdelávania<br><a href=\"https://www.digistart.sk\">www.digistart.sk</a> / info@digistart.sk</p>"
 };
+
+// Chrome vie pri formátovaní v contenteditable (execCommand) potichu zabaliť
+// text do <span style="font-size:..."> a preniesť tak vlastný CSS editora do
+// uloženého HTML - to sa potom pošle 1:1 v maile. Prejdeme uložené/vložené
+// HTML a necháme len bezpečné značky, z ktorých iba <a> smie mať jediný
+// atribút (href) - všetko ostatné vrátane inline štýlov padne.
+const EMAIL_ALLOWED_TAGS = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "UL", "OL", "LI", "A"]);
+function sanitizeEmailHtml(html) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = html || "";
+  const walk = (node) => {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType === Node.ELEMENT_NODE) {
+        walk(child);
+        if (child.tagName === "A" && EMAIL_ALLOWED_TAGS.has(child.tagName)) {
+          const href = child.getAttribute("href") || "";
+          Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
+          if (/^https?:\/\//i.test(href)) child.setAttribute("href", href);
+        } else if (EMAIL_ALLOWED_TAGS.has(child.tagName)) {
+          Array.from(child.attributes).forEach((attr) => child.removeAttribute(attr.name));
+        } else if (child.tagName === "DIV") {
+          const p = document.createElement("p");
+          p.append(...child.childNodes);
+          child.replaceWith(p);
+        } else {
+          child.replaceWith(...child.childNodes);
+        }
+      }
+    });
+  };
+  walk(wrap);
+  return wrap.innerHTML;
+}
 
 async function loadEmailTemplate() {
   const snap = await getDoc(doc(db, "settings", "emailTemplate"));
   const data = snap.exists() ? snap.data() : DEFAULT_EMAIL_TEMPLATE;
   document.getElementById("emailSubjectInput").value = data.subject || DEFAULT_EMAIL_TEMPLATE.subject;
-  document.getElementById("emailBodyInput").innerHTML = data.body || DEFAULT_EMAIL_TEMPLATE.body;
+  document.getElementById("emailBodyInput").innerHTML = sanitizeEmailHtml(data.body || DEFAULT_EMAIL_TEMPLATE.body);
 }
 
 document.querySelectorAll(".rte-toolbar button").forEach((btn) => {
@@ -1371,10 +1404,21 @@ document.querySelectorAll(".rte-toolbar button").forEach((btn) => {
   });
 });
 
+// Vložený text z iných zdrojov (Word, web) si so sebou nesie inline štýly
+// (font-size, farby...), ktoré EmailJS pošle 1:1 v maile. Vynútime čistý text
+// bez formátovania - tučné/kurzívu si treba znovu nastaviť tlačidlami hore.
+document.getElementById("emailBodyInput").addEventListener("paste", (e) => {
+  e.preventDefault();
+  const text = e.clipboardData.getData("text/plain");
+  document.execCommand("insertText", false, text);
+});
+
 document.getElementById("saveEmailBtn").addEventListener("click", async () => {
+  const clean = sanitizeEmailHtml(document.getElementById("emailBodyInput").innerHTML);
+  document.getElementById("emailBodyInput").innerHTML = clean;
   await setDoc(doc(db, "settings", "emailTemplate"), {
     subject: document.getElementById("emailSubjectInput").value,
-    body: document.getElementById("emailBodyInput").innerHTML
+    body: clean
   });
   document.getElementById("emailSaveMsg").style.display = "block";
   setTimeout(() => (document.getElementById("emailSaveMsg").style.display = "none"), 3000);
