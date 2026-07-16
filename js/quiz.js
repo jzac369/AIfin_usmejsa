@@ -39,6 +39,7 @@ function isSameCalendarDay(iso) {
 let activeSet = null; // "entry" | "exit"
 let currentIndex = 0;
 let answers = [];
+let guestMode = false; // skúšobný kvíz bez registrácie - odpovede sa nikam neukladajú
 
 const loginCard = document.getElementById("loginCard");
 const welcomeCard = document.getElementById("welcomeCard");
@@ -50,6 +51,15 @@ document.getElementById("loginBtn").addEventListener("click", login);
 document.getElementById("codeInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") login();
 });
+
+document.getElementById("guestEntryQuizBtn").addEventListener("click", () => startGuestQuiz("entry"));
+document.getElementById("guestExitQuizBtn").addEventListener("click", () => startGuestQuiz("exit"));
+
+function startGuestQuiz(set) {
+  guestMode = true;
+  loginCard.style.display = "none";
+  startQuiz(set);
+}
 
 async function login() {
   const errBox = document.getElementById("loginError");
@@ -396,7 +406,7 @@ function renderQuestion() {
       answers[currentIndex] = i;
       currentIndex++;
       if (currentIndex >= set.length) {
-        finishQuiz(set);
+        if (guestMode) finishGuestQuiz(set); else finishQuiz(set);
       } else {
         renderQuestion();
       }
@@ -472,6 +482,33 @@ async function finishQuiz(set) {
   } else {
     resultActions.appendChild(button(`Zobraziť certifikát${ICONS.trophy}`, showFinalResult));
   }
+}
+
+// Skúšobný kvíz bez registrácie: rovnaké otázky ako pre registrovaných
+// účastníkov, no odpovede sa nikde neukladajú - iba sa zobrazí vyhodnotenie.
+function finishGuestQuiz(set) {
+  const score = answers.reduce((acc, a, i) => acc + (a === set[i].correct ? 1 : 0), 0);
+  const pct = Math.round((score / set.length) * 100);
+
+  quizCard.style.display = "none";
+  resultCard.style.display = "block";
+  const badgeColor = pct >= 75 ? "var(--accent)" : pct >= 50 ? "var(--primary)" : "var(--muted)";
+  document.getElementById("resultBadge").innerHTML =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="${badgeColor}" stroke-width="1.6" style="width:56px;height:56px;"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 5H4v2a3 3 0 003 3M16 5h4v2a3 3 0 01-3 3"/><path d="M12 13v3M9 20h6M9.5 20c0-2 1-3 2.5-3s2.5 1 2.5 3"/></svg>`;
+  document.getElementById("scoreOut").textContent = `${score} / ${set.length}`;
+  document.getElementById("scoreLabel").textContent =
+    (activeSet === "entry" ? "Výsledok vstupného kvízu" : "Výsledok výstupného kvízu") + ` (${pct} %)`;
+
+  document.getElementById("compareBox").innerHTML =
+    `<p style="color:var(--muted); font-size:.85rem;">Tento kvíz ste absolvovali bez registrácie – výsledok sa nikam neukladá.</p>`;
+
+  const resultActions = document.getElementById("resultActions");
+  resultActions.innerHTML = "";
+  resultActions.appendChild(button("Späť na prihlásenie", () => {
+    guestMode = false;
+    resultCard.style.display = "none";
+    loginCard.style.display = "block";
+  }));
 }
 
 function showFinalResult() {

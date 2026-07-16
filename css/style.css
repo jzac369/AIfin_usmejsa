@@ -506,6 +506,30 @@ header.topbar nav a:hover { opacity: 1; text-decoration: underline; }
   margin-bottom: 20px;
 }
 
+.guest-quiz-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.guest-quiz-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--muted);
+  font-size: .72rem;
+  cursor: pointer;
+  opacity: .75;
+}
+.guest-quiz-link .icon-inline { width: 18px; height: 18px; margin-right: 0; }
+.guest-quiz-link:hover { color: var(--primary); opacity: 1; }
+
 .grid-terms {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
