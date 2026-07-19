@@ -154,6 +154,14 @@ mobileNavToggle.addEventListener("click", () => {
 
 document.getElementById("mobileNavBackdrop").addEventListener("click", closeMobileNav);
 
+document.getElementById("settingsLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  document.querySelectorAll(".admin-nav-item").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach((p) => (p.style.display = "none"));
+  document.getElementById("tab-settings").style.display = "block";
+  closeMobileNav();
+});
+
 // ---------- LOAD DATA ----------
 async function loadAll() {
   const [termsSnap, regsSnap] = await Promise.all([
@@ -367,10 +375,19 @@ document.getElementById("addTermBtn").addEventListener("click", () => {
   renderTermsEditorList();
 });
 
+function canSeeFeedback() {
+  return currentAdminEmail() === MAIN_ADMIN_EMAIL || feedbackVisibleToAll;
+}
+
+function feedbackStarsHtml(rating) {
+  if (!rating) return "";
+  return `<span style="color:var(--primary); letter-spacing:1px;">${"★".repeat(rating)}${"☆".repeat(5 - rating)}</span>`;
+}
+
 async function loadFeedbackVisibilitySetting() {
-  const box = document.getElementById("feedbackVisibilityBox");
   const isMainAdmin = currentAdminEmail() === MAIN_ADMIN_EMAIL;
-  box.style.display = isMainAdmin ? "block" : "none";
+  document.getElementById("feedbackVisibilityBox").style.display = isMainAdmin ? "block" : "none";
+  document.getElementById("feedbackVisibilityHint").style.display = isMainAdmin ? "none" : "block";
 
   const snap = await getDoc(doc(db, "settings", "adminConfig"));
   feedbackVisibleToAll = snap.exists() ? !!snap.data().feedbackVisibleToAll : false;
@@ -618,6 +635,8 @@ function renderTable() {
     return;
   }
 
+  const showFeedbackColumn = canSeeFeedback();
+
   function fillRows(tbody, rowsList) {
     rowsList.forEach((r) => {
       const tr = document.createElement("tr");
@@ -626,8 +645,12 @@ function renderTable() {
       const warningIcon = r.blockedChangeAttempt
         ? ` <span title="Pokus o zmenu/zrušenie menej ako 48h pred workshopom bol zablokovaný">⚠️</span>`
         : "";
+      const feedbackCell = showFeedbackColumn
+        ? `<td data-label="Hodnotenie">${feedbackStarsHtml(r.feedback?.rating)}</td>`
+        : "";
       tr.innerHTML = `
         <td data-label="Kód"><strong>${r.code}</strong></td>
+        ${feedbackCell}
         <td data-label="Meno">${r.fullName}</td>
         <td data-label="Email">${r.email}</td>
         <td data-label="Telefón">${r.phone}</td>
@@ -655,7 +678,7 @@ function renderTable() {
   const tableHeadHtml = `
     <thead>
       <tr>
-        <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th><th>Mesto</th>
+        <th>Kód</th>${showFeedbackColumn ? "<th>Hodnotenie</th>" : ""}<th>Meno</th><th>Email</th><th>Telefón</th><th>Mesto</th>
         <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Pozn.</th><th>Prišiel</th><th></th>
       </tr>
     </thead>
@@ -719,13 +742,12 @@ function openDetailPanel(tr, r) {
   const panelRow = document.createElement("tr");
   panelRow.className = "detail-panel-row";
   const td = document.createElement("td");
-  td.colSpan = 11;
+  td.colSpan = canSeeFeedback() ? 12 : 11;
 
-  const canSeeFeedback = currentAdminEmail() === MAIN_ADMIN_EMAIL || feedbackVisibleToAll;
-  const feedbackHtml = !canSeeFeedback || !r.feedback ? "" : `
+  const feedbackHtml = !canSeeFeedback() || !r.feedback ? "" : `
     <div class="card" style="background:var(--bg); margin:12px 0;">
       <h4 style="margin-top:0;">💬 Spätná väzba účastníka</h4>
-      <p style="margin:4px 0;"><strong>Hodnotenie:</strong> ${r.feedback.rating ? "★".repeat(r.feedback.rating) + "☆".repeat(5 - r.feedback.rating) : "–"}</p>
+      <p style="margin:4px 0;"><strong>Hodnotenie:</strong> ${r.feedback.rating ? feedbackStarsHtml(r.feedback.rating) : "–"}</p>
       <p style="margin:4px 0;"><strong>NPS (0–10):</strong> ${r.feedback.nps ?? "–"}</p>
       <p style="margin:4px 0;"><strong>Komentár:</strong> ${r.feedback.comment ? r.feedback.comment.replace(/</g, "&lt;") : "–"}</p>
     </div>
