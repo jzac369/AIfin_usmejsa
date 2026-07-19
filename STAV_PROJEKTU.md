@@ -9,152 +9,210 @@ Posledná aktualizácia: 2026-07-15.
 Statická stránka (HTML/CSS/vanilla JS, žiadny build krok) pre bezplatný
 workshop **„Ako sa nenechať oklamať: AI ako pomocník pri finančných
 rozhodnutiach"** pre seniorov. Organizuje **Akadémia digitálneho vzdelávania
-DigiStart**, v spolupráci s **Centrum Usmejsa**, finančne podporené
-**Nadáciou Národnej banky Slovenska**. Workshop trvá cca 2,5 hod.
+DigiStart**, v spolupráci s **Centrum Usmejsa** a **o.z. Úsmev pre druhých**,
+finančne podporené **Nadáciou Národnej banky Slovenska** (Grantová výzva
+GV-2026-15). Workshop trvá cca 2,5 hod., koná sa v Centrum Usmejsa,
+Kláštorská 471/44, 921 01 Piešťany.
 
 - **Repo:** https://github.com/jzac369/AIfin_usmejsa (vlastník: `jzac369`)
 - **Live URL:** https://bezpecneonline.digistart.sk (custom doména, `CNAME` v repe)
 - Backend: Firebase Firestore + Firebase Authentication (len admin login).
   Firebase aj EmailJS sú reálne nastavené a funkčné (nie placeholder hodnoty).
 - **Ja (Claude) nemám prístup na priamy zápis do Firestore ani na Firebase
-  Console.** Zmeny `firestore.rules` musí užívateľ vždy sám vložiť do
-  Firebase Console → Firestore → Rules → Publish. Nikdy nezadávam admin
-  heslo ani netriggerujem žiadny reálny deploy sám.
+  Console, ani na dashboard EmailJS.** Zmeny `firestore.rules` a opravy
+  nesprávnych dát vo Firestore musí užívateľ vždy sám vložiť/upraviť cez
+  Firebase Console. Nikdy nezadávam admin heslo ani netriggerujem žiadny
+  reálny deploy sám (okrem `git push` na vyžiadanie).
+- **Obrázky/logá vložené priamo do chatu si musí užívateľ sám uložiť na
+  disk** (Claude nevie ukladať prílohy) – vždy poviem presnú cestu, kam ich
+  uložiť, aby ich kód rovno našiel.
 
 ## Súbory
 
 | Súbor | Účel |
 |---|---|
-| `index.html` + `js/booking.js` | Landing/teaser stránka, hero, partner logá, skrytý registračný formulár (odkrytý CTA tlačidlom), počítadlo návštev |
-| `kviz.html` + `js/quiz.js` | Prihlásenie 5-miestnym kódom, vstupný/výstupný kvíz, certifikát |
-| `admin.html` + `js/admin.js` | Admin zóna (chránená Firebase Auth) – všetka správa, live-update cez `onSnapshot` |
-| `privacy.html` | GDPR/ochrana osobných údajov (DigiStart ako prevádzkovateľ) |
-| `js/util.js` | Zdieľané funkcie (kód, dátum, .ics export, CSV export, `ICONS` sada SVG namiesto emoji) |
+| `index.html` + `js/booking.js` | Landing stránka, hero, partner logá, grant note, registračný formulár |
+| `kviz.html` + `js/quiz.js` | Prihlásenie 5-miestnym kódom, vstupný/výstupný kvíz, certifikát, **guest kvíz bez registrácie** |
+| `admin.html` + `js/admin.js` | Admin zóna (Firebase Auth) – všetka správa, live-update cez `onSnapshot` |
+| `privacy.html` | GDPR (DigiStart ako prevádzkovateľ), teraz tiež `warm-theme` |
+| `js/util.js` | Zdieľané funkcie (kód, dátum, .ics export, `ICONS` sada SVG) |
 | `js/email.js` + `js/emailjs-config.js` | Odosielanie potvrdzovacích emailov cez EmailJS |
 | `js/firebase-config.js` | Reálny Firebase config projektu |
-| `js/questions.js` | Aktuálne kvízové otázky (ENTRY_QUIZ/EXIT_QUIZ, 8 tém, 4 možnosti/otázka) – fallback pri prvom nastavení |
-| `firestore.rules` | Bezpečnostné pravidlá – jediná vrstva prístupovej kontroly, **musí byť ručne publikovaná** |
+| `js/questions.js` | Kvízové otázky (ENTRY_QUIZ/EXIT_QUIZ, 8 tém, 4 možnosti) – fallback |
+| `firestore.rules` | Bezpečnostné pravidlá – **musí byť ručne publikovaná** |
 | `css/style.css` | Celý dizajn – admin paleta v `:root`, verejné stránky cez `body.warm-theme` |
-| `img/partners/*`, `img/hero-illustration.png` | Logá partnerov, ilustrácia na landing page |
+| `img/partners/*`, `img/hero-illustration.png` | Logá partnerov (Nadácia NBS, Centrum Usmejsa, Úsmev pre druhých, DigiStart), portrétová hero ilustrácia |
 
 ## Kompletný zoznam funkcií (stav k tomuto commitu)
 
 **Landing page (index.html):**
-Krátky "teaser" (hook, 5 bodov, 4-kartová sekcia "prečo", partner logá, CTA
-tlačidlo), za ktorým sa odkryje plný registračný formulár s termínmi
-(kapacita + čakacia listina), 5-otázkový dotazník, náhodný 5-miestny kód,
-QR kód, .ics export, zdieľanie na Facebooku, urgency banner pri malom počte
-voľných miest, počítadlo dennej/mesačnej návštevnosti (`pageViews` kolekcia).
+Hlavička s DigiStart logom (bez rámčeka) + páska s celým názvom workshopu
+pod ňou, hero sekcia (nadpis, hook text, 5 bodov výhod, miesto konania),
+partner logá (Nadácia NBS / Centrum Usmejsa / Úsmev pre druhých / DigiStart,
+orezané na rovnaké okraje, 40px medzery), grant-note text o financovaní,
+sekcia "Získate istotu..." (4 karty bez ikon, iba text), registračný
+formulár s termínmi (kapacita + čakacia listina), 5-otázkový dotazník,
+náhodný 5-miestny kód, QR kód, .ics export, zdieľanie na Facebooku. Po
+úspešnej registrácii sa celá `#registrationSection` presunie hneď pod
+hlavičku a stránka sa scrollne na `top:0` (instant, nie smooth) – potvrdenie
+je vidieť okamžite bez scrollovania.
 
 **Kvíz (kviz.html):**
-Prihlásenie kódom, vstupný a výstupný kvíz (8 otázok × 4 možnosti,
-editovateľné z admina), porovnanie skóre, tlačiteľný certifikát,
-presun/zrušenie registrácie (self-service, zablokované 48h pred
-workshopom), feedback formulár po workshope.
+Prihlásenie kódom → vstupný a výstupný kvíz, porovnanie skóre, tlačiteľný
+certifikát, presun/zrušenie registrácie (48h blokácia), feedback formulár.
+**Nové:** pod prihlasovacím formulárom sú 2 malé nenápadné ikonky "Vstupný
+kvíz" / "Výstupný kvíz" pre kohokoľvek BEZ registrácie – otázky sa berú z
+rovnakého zdroja (Firestore `quizQuestions`), ale odpovede sa nikam
+neukladajú (`finishGuestQuiz()` len spočíta a zobrazí skóre).
 
 **Admin zóna (admin.html):**
-- Zoznam prihlásených – zoskupené podľa termínu, live-update bez refreshu,
-  vyhľadávanie, filter, farebné zvýraznenie podľa stavu kvízov, ručné
-  pridanie/úprava/vymazanie účastníka, audit log, export CSV
-- Presun na iný termín – výber z dostupných termínov s voľnou kapacitou,
-  upozornenie pri presúvaní už zrušenej registrácie
-- Prezencia (checkbox "Prišiel"), interná poznámka k účastníkovi, tlačiteľná
-  prezenčná listina
-- Termíny – ľubovoľný počet, pridávanie/mazanie, prepínač viditeľnosti v
-  kalendári, čakacia listina per termín, prepínač "kvíz len v deň workshopu"
-- Editor otázok kvízu + JSON-import okno na rýchle vloženie vygenerovaných
-  otázok (`#questionsImportInput` / "Uložiť otázky")
-- Editor emailovej šablóny (rich text), editor obsahu landing page
-- Materiály na stiahnutie (base64 vo Firestore – bez Firebase Storage)
-- Štatistiky – obsadenosť, priemerné skóre, koláčové aj stĺpcové grafy
-  (click-to-zoom modal), návštevnosť stránky
-- Rotujúci žltý panel upozornení (min. 5 správ, 10s interval)
-- Sidebar branding, indikátor "Registrácia aktívna/uzavretá", uvítanie s
-  emailom prihláseného admina, footer "Powered by Code w/Digistart" +
-  "Nahlásiť chybu"
-- Mobilný hamburger toggle (≤480px) – sidebar sa mení na slide-in drawer,
-  desktop/tablet nedotknuté
-- Prihlásenie: email/heslo, prihlasovanie sa loguje do audit logu
+- Sidebar branding "WORKSHOP MANAGEMENT" (bez rámčeka), nad Zoznamom
+  prihlásených statický riadok "WORKSHOP: <celý názov>" + žltý panel
+  upozornení vedľa neho
+- Zoznam prihlásených – zoskupené podľa termínu, live-update, vyhľadávanie,
+  filter, ručné pridanie/úprava/vymazanie účastníka, audit log, export CSV
+- Prezenčná listina – **vždy tlačí presne 12 riadkov** (doplnené prázdnymi,
+  ak je účastníkov menej), ale číslované sú len prvých 10; pod ňou tabuľka
+  Lektor (meno + podpis), zmestí sa na 1 stranu
+- Presun na iný termín, zrušenie, prezencia, poznámky
+- Termíny – editor **už nikdy neprepisuje `booked`/`waitlistCount`** pre
+  existujúce termíny (viď bugfix nižšie); pri vytváraní nového termínu sa
+  nastavia na 0
+- Editor otázok kvízu + JSON-import, editor emailovej šablóny (rich text,
+  teraz so sanitizáciou HTML pri načítaní aj uložení), editor landing page
+  (bez "Propagačný text" poľa – bolo odstránené)
+- Materiály na stiahnutie, štatistiky, mobilný hamburger toggle
 
 **Dizajn:**
-Len svetlý režim (tmavý/prepínač bol odstránený). Verejné stránky majú teplú
-senior-friendly tému (`body.warm-theme`, fonty Fraunces + Atkinson
-Hyperlegible, SVG ikony namiesto emoji). Admin zóna má vlastnú modrú
-gradientovú paletu. Responzívne pre mobil/tablet (tabuľky sa menia na karty).
+Jednotná teplá téma (`body.warm-theme`, Fraunces + Atkinson Hyperlegible)
+naprieč **všetkými** verejnými stránkami vrátane `privacy.html`. Admin zóna
+má vlastnú modrú paletu. Responzívne pre mobil/tablet.
 
 ## Aktuálny stav Firestore Rules (over, že je publikované v Firebase Console)
 
-Kompletný obsah je v `firestore.rules` v repe. Tri zmeny za poslednú session:
-1. `registrations` update whitelist doplnená o `entryTotal`, `exitTotal`
-   (fix hlavného bugu s neukladaním kvízu – toto bol root cause).
-2. `auditLog` create whitelist doplnená o akciu `'quiz-completed'`.
-3. Nový blok `pageViews/{dateId}` – verejnosť smie len zapisovať `views`,
-   čítať smie len admin.
+Kompletný obsah je v `firestore.rules` v repe – v tejto session sa
+nemenil, žiadna nová zmena na publikovanie.
 
-Ak nie je publikované, kvíz/audit log/page views môžu zlyhávať s
-permission-denied chybami.
+## Posledná session (2026-07-15) – čo sa riešilo (chronologicky, zhrnuté)
 
-## Posledná session – čo sa riešilo (chronologicky, zhrnuté)
+Veľmi dlhá session, hlavné body:
 
-1. Admin UI polish – len svetlý režim, badge farby, zoskupenie termínov,
-   mazanie logov podľa dátumu, tablet layout fix.
-2. **Kľúčový bugfix**: kvíz sa neukladal – chýbajúce `entryTotal`/`exitTotal`
-   v Firestore Rules whiteliste. Opravené a publikované.
-3. Nový vizuálny štýl pre verejné stránky, landing page prerobená na krátky
-   teaser s partner logami a skrytým registračným formulárom.
-4. Admin zóna: live-update cez `onSnapshot`, rotujúci banner, sidebar
-   branding, indikátor stavu registrácie, štatistika návštevnosti.
-5. Fix zamrznutej tabuľky registrácií po transfer/delete a fix duplicitnej
-   dekrementácie kapacity pri presune zrušenej registrácie; pridaný výber
-   dostupných termínov s kapacitou pri presune.
-6. Nové kvízové otázky z brožúry (8 tém, 4 možnosti/otázka, vstupný
-   náročnejší než výstupný) v `js/questions.js` + JSON-import UI v admin
-   "Otázky" editore (ja nemám priamy zápis do ich Firestore – užívateľ musí
-   sám vložiť JSON a kliknúť "Uložiť otázky").
-7. Fix grafov – oválne koláčové grafy (chýbal `responsive:true`), pridaný
-   click-to-zoom modal, opravené zošpúlené stĺpcové grafy
-   (`.chart-frame-bar{aspect-ratio:16/9}`).
-8. Mobilné opravy tabuľky registrácií (zalamovanie textu, zvyškové
-   horizontálne skrolovanie) – **užívateľ potvrdil funkčnosť**.
-9. Mobilný hamburger drawer pre sidebar nav (len ≤480px). Prvý pokus bol
-   nefunkčný – root cause: `transform` animácia sa v testovacom prostredí
-   neaplikovala (nahradené `left` property animáciou) a `.mobile-nav-backdrop`
-   je v DOM súrodenec `.admin-sidebar`, nie potomok (selector opravený z
-   descendant na `+` adjacent-sibling combinator). Tlačidlo zmenšené na
-   26×26px. Overené priamou JS inšpekciou DOM/CSS stavu na všetkých troch
-   breakpointoch. **Posledný commit: `2e6a216`, pushnutý do `origin main`.**
+1. **Web copy/SEO**: kompletný oficiálny názov workshopu všade na stránke +
+   metadátach (title, description, OG tagy), "Centrum Usmejsa" konzistentne
+   všade, pridané logo Úsmev pre druhých, grant-note text o Nadácii NBS.
+2. **Header redizajn**: z pôvodného "AI a Financie" textu → kompaktné
+   DigiStart logo (najprv v bielej karte, neskôr na žiadosť užívateľa **bez
+   rámčeka**, priamo na gradiente), celý názov workshopu presunutý do
+   samostatnej pásky pod hlavičkou. Logo sa menilo 3× (transparentné →
+   glow verzia orezaná → finálna plochá tmavomodrá verzia).
+3. **Typografia/spacing bugfix**: legacy CSS pravidlo `.hero p` (vyššia
+   špecifickosť ako `.hero-hook`/`.hero-subtitle`) potichu rušilo medzery a
+   farby – odstránené. Rovnaký vzorec (stará hodnota z pred-warm-theme éry)
+   opravený aj v `.quiz-option.picked`.
+4. **Partner logá**: autocrop prebytočného okolia (Python/PIL) pre rovnaké
+   opticky vnímané medzery, zväčšené o 30 %, preusporiadané, opravený
+   `max-width`, ktorý orezával širšie logo.
+5. **Hero obsah**: prepísaný hook text + 5 bodov výhod + 2 nové odseky
+   (praktické cvičenia, certifikát) presne podľa zadania užívateľa.
+   Odstránené ikony z kariet "Prečo práve tento workshop" (na žiadosť).
+6. **Quiz hover bug**: `button:hover{background:var(--primary-dark)}`
+   (globálne pravidlo) malo vyššiu špecifickosť pre `background` než
+   `.quiz-option` v pokoji → tmavé pozadie + tmavý text = nečitateľné.
+   Opravené explicitným re-assertom farby v `.quiz-option:hover`.
+7. **Email šablóna** (väčší blok práce):
+   - Kontenteditable RTE v Admin → Email vkladal pri paste/formátovaní
+     nečisté HTML (`<span style="font-size:...">`, cudzie atribúty z
+     ChatGPT-copy) → pridaná `sanitizeEmailHtml()` (whitelist tagov, `<a>`
+     smie mať len `href`), beží pri načítaní (self-heal starých dát) aj
+     pri uložení; paste handler vynucuje čistý text.
+   - **Skutočný root cause zlého renderovania v mailboxe** bol ale inde:
+     EmailJS šablóna (`template_c9lio3o`) mala `{{message}}` vloženú cez
+     ich vizuálny editor, ktorý HTML automaticky escapuje na viditeľný
+     text. Užívateľ vytvoril novú šablónu v Code Editor režime
+     (`template_lax1z6f`), ja som upravil `js/emailjs-config.js`.
+   - Nový, kompletnejší `DEFAULT_EMAIL_TEMPLATE.body` (v `js/email.js` aj
+     `js/admin.js`) s tučnými nadpismi sekcií a funkčným odkazom.
+8. **Scroll po registrácii** (viacero iterácií, dôležité pochopiť):
+   - Pôvodne `window.scrollTo({top:0})` po úspechu – no karta úspechu bola
+     fyzicky ďaleko dole v DOM, takže scroll na vrch stránky ju vôbec
+     neukázal.
+   - 2. pokus: `successCard.scrollIntoView({smooth})` – fungovalo, ale
+     testoval som to v **zabackgroundovanom tabe** (zabudol som ho
+     `tabs_select`), čo v tomto browser-tool prostredí scroll úplne
+     potláča → falošne som nahlásil "funguje", keď v realite ešte nie.
+   - 3. pokus: zistené, že stránka má globálne `scroll-behavior:smooth`,
+     takže aj veľký skok (2000-3000px) trval sekundy a pôsobil "zaseknuto"
+     → zmenené na `behavior:"instant"`.
+   - **Finálne riešenie** (podľa toho, čo užívateľ naozaj chcel): na
+     úspech sa `#registrationSection` fyzicky presunie
+     (`insertAdjacentElement`) hneď za `.title-ribbon` a `window.scrollTo`
+     na `top:0` – takže potvrdenie je doslova na úplnom vrchu stránky.
+     Overené reálnym odoslaním formulára (nie simuláciou) na desktope,
+     tablete aj mobile s fronted tabom – `scrollY === 0` vo všetkých troch.
+9. **Dátová chyba kapacity termínov** (dôležitý bugfix, nesúvisiaci s
+   pôvodnou požiadavkou, objavený pri debugovaní):
+   Admin editor termínov (`editableTerms`) je jednorazový snapshot z
+   prihlásenia do admina a nikdy sa živo neaktualizuje (zámerne, aby
+   neprerušil rozrobené úpravy). Bug: tlačidlo "Uložiť termíny" ale VŽDY
+   zapisovalo `booked`/`waitlistCount` z tejto starej kópie naspäť do
+   Firestore – takže akékoľvek uloženie (aj len zmena viditeľnosti)
+   potichu vrátilo počty obsadenosti na hodnotu spred prihlásenia admina,
+   aj keď medzitým pribudli/ubudli reálne registrácie. **Opravené** – editor
+   už `booked`/`waitlistCount` pre existujúce termíny vôbec nezapisuje.
+   Užívateľ musí ešte ručne opraviť aktuálne nesprávnu hodnotu `booked` pre
+   `term1` vo Firebase Console (mal by som k tomu dostať potvrdenie, či to
+   urobil – pozri "Neoverené" nižšie).
+10. **Guest kvíz**: 2 malé ikony na `kviz.html` pod prihlasovacím
+    formulárom umožňujú vyskúšať vstupný/výstupný kvíz bez registrácie;
+    otázky z rovnakého zdroja, nič sa neukladá. Overené end-to-end.
 
 ## Neoverené / na kontrolu v ďalšej session
 
-- **Overiť, či bol finálny JSON so 4 možnosťami reálne vložený do živého
-  admin "Otázky" editora a uložený tlačidlom "Uložiť otázky".** Bol poslaný
-  dvakrát (najprv 8 možností, potom opravené na 4), no niet potvrdenia, že
-  posledná verzia je live vo Firestore.
-- Skontrolovať, že `firestore.rules` (viď vyššie) je publikované v Firebase
-  Console – nebolo to v tejto session explicitne re-potvrdené po poslednej
-  zmene.
+- **Firebase Console → terms → term1 → pole `booked`** – bolo nesprávne
+  na `0` kvôli bugu č. 9 vyššie, malo by byť opravené na skutočný počet
+  potvrdených (nezrušených) registrácií pre tento termín (pri poslednej
+  kontrole to bol 1 účastník – VAAT3). Over, či je to už opravené; ak nie,
+  over aj ostatné termíny pre istotu (term2 bol v poriadku, term3-5 mali
+  booked:0 čo pravdepodobne sedí).
+- **Testovacie registrácie**: počas tejto session som pri overovaní scroll
+  fixu vytvoril ~13 reálnych testovacích registrácií (mená ako
+  TestClaude, TestClaude2…9, ScrollCheck/InstantCheck/TopOfPage/…) najmä
+  na termín 1. augusta 2026. Ak ešte nie sú zmazané, treba ich zmazať cez
+  Admin → Registrácie (a to je pravdepodobne presne to, čo spôsobilo bug
+  č. 9 vyššie – ich mazanie počas otvorenej Termíny záložky).
+- **EmailJS nová šablóna `template_lax1z6f`** – over si, že skutočne
+  vykresľuje HTML správne (odoslať si testovací email) po tom, čo si ju
+  užívateľ nastavil v Code Editore.
 
 ## Na čo si dať pozor
 
-- **GitHub Pages deployment vie byť nespoľahlivý** – ak po pushi zmeny
-  nevidno ani po pár minútach, skontroluj repo → **Actions** tab.
-- **GitHub token** (`ghp_...`) bol počas vývoja viackrát prevkladaný priamo
-  v chate – odporúčam ho zrevokovať/vygenerovať nový, ak sa to ešte
-  neurobilo.
-- **Firebase Storage/Blaze plán** vedome nie je zapnutý – súbory na
-  stiahnutie (Materiály) idú ako base64 priamo do Firestore, limit
-  ~700KB/súbor.
-- Nástroj na screenshoty preview servera je v tomto prostredí často
-  nespoľahlivý (timeouty) – overovanie zmien radšej robiť cez
-  `javascript_tool` (computed CSS/DOM stav) než cez vizuálny screenshot.
-  Fungovalo to spoľahlivo pri debugovaní mobilného menu.
-- Obrázky/logá, ktoré užívateľ vloží do chatu, si musí sám uložiť do
-  repozitára (Claude nevie ukladať prílohy priamo na disk) – dajú sa potom
-  premenovať/zapojiť do kódu.
+- **GitHub Pages deployment** – po pushi trvá nasadenie pár minút; ak
+  zmeny nie sú vidno, skontroluj repo → Actions tab.
+- **Firebase Storage/Blaze plán** nie je zapnutý – Materiály idú ako
+  base64 priamo do Firestore, limit ~700KB/súbor.
+- **Screenshot nástroj v Browser pane vie byť nespoľahlivý**, ale v tejto
+  session fungoval prekvapivo dobre pri opakovanom použití – ak zlyhá,
+  over zmeny cez `javascript_tool` (computed CSS/DOM stav, `getComputedStyle`,
+  `getBoundingClientRect()`) namiesto vizuálneho screenshotu.
+- **KRITICKÉ: vždy skontroluj `tabs_context` a `tabs_select` na fronted
+  tab pred testovaním čohokoľvek so scrollom/animáciami/timing-om** –
+  scroll (aj `scrollTo`, aj `scrollIntoView`) je v backgroundovanom tabe
+  v tomto nástroji úplne potlačený a testy budú falošne "fungovať", kým v
+  skutočnosti scroll vôbec neprebehne. Toto ma stálo niekoľko zbytočných
+  kôl debugovania.
+- **Testovacie dáta**: pri end-to-end testovaní registračného formulára sa
+  vytvárajú REÁLNE záznamy vo Firestore (nie mock/staging prostredie) –
+  vždy na konci upozorniť užívateľa a navrhnúť zmazanie cez Admin.
+- **Deštruktívne shell príkazy**: raz som v tejto session omylom spustil
+  `taskkill /F /IM python.exe`, čo zabilo VŠETKY python procesy v systéme
+  (nielen môj testovací server) – vždy cieliť na konkrétny PID
+  (`Get-NetTCPConnection -LocalPort <port> | ...`), nikdy nie plošne podľa
+  mena procesu.
+- **Obrázky do chatu**: Claude ich nevie uložiť sám, vždy treba dať
+  užívateľovi presnú cieľovú cestu a počkať na potvrdenie "je tam".
 
-## Čo nie je rozrobené / na čo sa nič nečaká
+## Čo nie je rozrobené
 
-Žiadna funkcia nie je rozpracovaná uprostred. Jediné otvorené body sú tie
-dve položky v sekcii "Neoverené" vyššie (over si ich pri návrate do
-Firebase Console / admin Otázky editora). Tento súbor je snímka stavu pre
-pokračovanie, nie zoznam TODO.
+Žiadna funkcia nie je rozpracovaná uprostred. Otvorené sú len položky v
+sekcii "Neoverené" vyššie. Tento súbor je snímka stavu pre pokračovanie,
+nie zoznam TODO.
