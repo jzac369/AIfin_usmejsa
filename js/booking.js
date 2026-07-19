@@ -255,7 +255,9 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
     });
 
     const registeredTerm = terms.find((t) => t.id === selectedTermId);
-    sendConfirmationEmail(db, { firstName, lastName, email, code: finalCode, status: finalStatus }, registeredTerm).catch(() => {});
+    sendConfirmationEmail(db, { firstName, lastName, email, code: finalCode, status: finalStatus }, registeredTerm).catch((emailErr) => {
+      console.error("Odoslanie potvrdzovacieho emailu zlyhalo:", emailErr);
+    });
     showSuccess(finalCode, finalStatus);
   } catch (err) {
     errBox.textContent = err.message || "Nastala chyba pri registrácii. Skúste to prosím znova.";
