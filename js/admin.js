@@ -635,8 +635,6 @@ function renderTable() {
     return;
   }
 
-  const showFeedbackColumn = canSeeFeedback();
-
   function fillRows(tbody, rowsList) {
     rowsList.forEach((r) => {
       const tr = document.createElement("tr");
@@ -645,12 +643,8 @@ function renderTable() {
       const warningIcon = r.blockedChangeAttempt
         ? ` <span title="Pokus o zmenu/zrušenie menej ako 48h pred workshopom bol zablokovaný">⚠️</span>`
         : "";
-      const feedbackCell = showFeedbackColumn
-        ? `<td data-label="Hodnotenie">${feedbackStarsHtml(r.feedback?.rating)}</td>`
-        : "";
       tr.innerHTML = `
         <td data-label="Kód"><strong>${r.code}</strong></td>
-        ${feedbackCell}
         <td data-label="Meno">${r.fullName}</td>
         <td data-label="Email">${r.email}</td>
         <td data-label="Telefón">${r.phone}</td>
@@ -678,7 +672,7 @@ function renderTable() {
   const tableHeadHtml = `
     <thead>
       <tr>
-        <th>Kód</th>${showFeedbackColumn ? "<th>Hodnotenie</th>" : ""}<th>Meno</th><th>Email</th><th>Telefón</th><th>Mesto</th>
+        <th>Kód</th><th>Meno</th><th>Email</th><th>Telefón</th><th>Mesto</th>
         <th>Vstup.</th><th>Výst.</th><th>Stav</th><th>Pozn.</th><th>Prišiel</th><th></th>
       </tr>
     </thead>
@@ -742,7 +736,7 @@ function openDetailPanel(tr, r) {
   const panelRow = document.createElement("tr");
   panelRow.className = "detail-panel-row";
   const td = document.createElement("td");
-  td.colSpan = canSeeFeedback() ? 12 : 11;
+  td.colSpan = 11;
 
   const feedbackHtml = !canSeeFeedback() || !r.feedback ? "" : `
     <div class="card" style="background:var(--bg); margin:12px 0;">
