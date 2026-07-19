@@ -20,6 +20,9 @@ const db = getFirestore(app);
 let terms = [];
 let registrations = [];
 
+const MAIN_ADMIN_EMAIL = "info@digistart.sk";
+let feedbackVisibleToAll = false;
+
 function currentAdminEmail() {
   return auth.currentUser?.email || "neznámy admin";
 }
@@ -164,6 +167,7 @@ async function loadAll() {
   await renderAlerts();
   renderTermsEditor();
   await loadQuizRestrictionSetting();
+  await loadFeedbackVisibilitySetting();
   renderTermFilter();
   renderTable();
   await renderStats();
@@ -361,6 +365,23 @@ async function deleteTerm(index) {
 document.getElementById("addTermBtn").addEventListener("click", () => {
   editableTerms.push({ id: null, booked: 0, waitlistCount: 0 });
   renderTermsEditorList();
+});
+
+async function loadFeedbackVisibilitySetting() {
+  const box = document.getElementById("feedbackVisibilityBox");
+  const isMainAdmin = currentAdminEmail() === MAIN_ADMIN_EMAIL;
+  box.style.display = isMainAdmin ? "block" : "none";
+
+  const snap = await getDoc(doc(db, "settings", "adminConfig"));
+  feedbackVisibleToAll = snap.exists() ? !!snap.data().feedbackVisibleToAll : false;
+  document.getElementById("feedbackVisibleToAllCheck").checked = feedbackVisibleToAll;
+}
+
+document.getElementById("feedbackVisibleToAllCheck").addEventListener("change", async (e) => {
+  feedbackVisibleToAll = e.target.checked;
+  await setDoc(doc(db, "settings", "adminConfig"), { feedbackVisibleToAll }, { merge: true });
+  await logAudit("feedback-visibility-change", "", { feedbackVisibleToAll });
+  if (!document.querySelector("#regGroupsContainer .detail-panel-row")) renderTable();
 });
 
 async function loadQuizRestrictionSetting() {
@@ -699,7 +720,19 @@ function openDetailPanel(tr, r) {
   panelRow.className = "detail-panel-row";
   const td = document.createElement("td");
   td.colSpan = 11;
+
+  const canSeeFeedback = currentAdminEmail() === MAIN_ADMIN_EMAIL || feedbackVisibleToAll;
+  const feedbackHtml = !canSeeFeedback || !r.feedback ? "" : `
+    <div class="card" style="background:var(--bg); margin:12px 0;">
+      <h4 style="margin-top:0;">💬 Spätná väzba účastníka</h4>
+      <p style="margin:4px 0;"><strong>Hodnotenie:</strong> ${r.feedback.rating ? "★".repeat(r.feedback.rating) + "☆".repeat(5 - r.feedback.rating) : "–"}</p>
+      <p style="margin:4px 0;"><strong>NPS (0–10):</strong> ${r.feedback.nps ?? "–"}</p>
+      <p style="margin:4px 0;"><strong>Komentár:</strong> ${r.feedback.comment ? r.feedback.comment.replace(/</g, "&lt;") : "–"}</p>
+    </div>
+  `;
+
   td.innerHTML = `
+    ${feedbackHtml}
     <div class="card" style="margin:8px 0;">
       <p style="color:var(--muted); font-size:.85rem; margin-top:0;">
         <strong>Zdroj:</strong> ${r.survey?.source ?? "–"} &nbsp;·&nbsp;
