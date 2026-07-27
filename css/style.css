@@ -1121,6 +1121,7 @@ footer.site-footer {
     height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
+    background: #fff !important;
   }
   body.printing-attendance > *:not(#attendancePrintArea) { display: none !important; }
   body.printing-attendance #attendancePrintArea {
