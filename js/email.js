@@ -1,6 +1,6 @@
 import { emailjsConfig, isEmailjsConfigured } from "./emailjs-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { formatDateTime } from "./util.js";
+import { formatDateOnly } from "./util.js";
 
 export const DEFAULT_EMAIL_TEMPLATE = {
   subject: "Potvrdenie registrácie – Workshop AI a financie",
@@ -23,7 +23,7 @@ export async function sendConfirmationEmail(db, registration, term) {
   const replacements = {
     "{{meno}}": registration.firstName || "",
     "{{priezvisko}}": registration.lastName || "",
-    "{{termin}}": term ? formatDateTime(term.datetime) : "",
+    "{{termin}}": term ? `${formatDateOnly(term.datetime)} o 10:00` : "",
     "{{kod}}": registration.code
   };
   const fill = (text) => Object.entries(replacements).reduce((acc, [k, v]) => acc.split(k).join(v), text || "");

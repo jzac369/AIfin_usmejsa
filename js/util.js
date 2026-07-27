@@ -38,7 +38,23 @@ export function formatDateTime(iso) {
     month: "long",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: "Europe/Bratislava"
+  });
+}
+
+// Všetky workshopy sú vždy v sobotu o pevných 10:00 - v emaili preto čas
+// nezávisí od výpočtu z dátumu (ani nepriamo od hodín/pásma zariadenia
+// odosielateľa), len samotný dátum je dynamický podľa termínu.
+export function formatDateOnly(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleString("sk-SK", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Bratislava"
   });
 }
 
