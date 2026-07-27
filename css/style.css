@@ -1108,8 +1108,10 @@ footer.site-footer {
 }
 
 #attendancePrintArea { display: none; padding: 0 4px 0 0; box-sizing: border-box; }
-#attendancePrintArea table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 16px; }
-#attendancePrintArea th, #attendancePrintArea td { border: 1px solid #999; padding: 8px; text-align: left; font-size: 13px; word-break: break-word; }
+#attendancePrintArea h1 { font-size: 1.05rem; line-height: 1.25; margin: 0 0 6px; }
+#attendancePrintArea p { font-size: .85rem; margin: 0 0 10px; }
+#attendancePrintArea table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 10px; }
+#attendancePrintArea th, #attendancePrintArea td { border: 1px solid #999; padding: 3px 6px; text-align: left; font-size: 10.5px; line-height: 1.2; word-break: break-word; }
 #attendancePrintArea th { background: #eee; }
 
 @media print {

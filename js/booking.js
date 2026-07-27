@@ -2,7 +2,7 @@ import { firebaseConfig } from "./firebase-config.js";
 import { initEmailjs, sendConfirmationEmail } from "./email.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, getDocs, doc, getDoc, setDoc, runTransaction, increment
+  getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, runTransaction, increment
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { generateCode, formatDateTime, downloadICS, ICONS } from "./util.js";
 
@@ -24,6 +24,20 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 initEmailjs();
+
+async function logParticipantEvent(action, code, details) {
+  try {
+    await addDoc(collection(db, "auditLog"), {
+      action,
+      code,
+      details,
+      adminEmail: "účastník",
+      timestamp: Date.now()
+    });
+  } catch {
+    // logovanie nesmie zhodiť samotnú registráciu
+  }
+}
 
 // Jednoduchý denný počítadlo návštev registračnej stránky (pre prehľad v admin zóne).
 (async function logPageView() {
@@ -258,6 +272,7 @@ document.getElementById("regForm").addEventListener("submit", async (e) => {
     sendConfirmationEmail(db, { firstName, lastName, email, code: finalCode, status: finalStatus }, registeredTerm).catch((emailErr) => {
       console.error("Odoslanie potvrdzovacieho emailu zlyhalo:", emailErr);
     });
+    logParticipantEvent("registration", finalCode, { fullName, termId: selectedTermId, status: finalStatus });
     showSuccess(finalCode, finalStatus);
   } catch (err) {
     errBox.textContent = err.message || "Nastala chyba pri registrácii. Skúste to prosím znova.";

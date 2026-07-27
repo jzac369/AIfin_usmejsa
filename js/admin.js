@@ -1019,10 +1019,10 @@ function printAttendanceSheet(term, rows) {
         ${printRows.map((r, i) => `<tr><td>${i < numberedRows ? i + 1 : ""}</td><td>${r ? r.fullName : ""}</td><td>${r ? r.city : ""}</td><td>${r ? r.code : ""}</td><td></td></tr>`).join("")}
       </tbody>
     </table>
-    <table style="margin-top:32px; width:60%;">
+    <table style="margin-top:14px; width:60%;">
       <thead><tr><th>Lektor – meno a priezvisko</th><th>Podpis lektora</th></tr></thead>
       <tbody>
-        <tr><td style="height:40px;"></td><td style="height:40px;"></td></tr>
+        <tr><td style="height:22px;"></td><td style="height:22px;"></td></tr>
       </tbody>
     </table>
   `;
@@ -1620,6 +1620,8 @@ function describeAuditEntry(e) {
   const termLabel = (id) => (termMap[id] ? formatDateTime(termMap[id].datetime) : id || "–");
 
   switch (e.action) {
+    case "registration":
+      return `📝 Nová registrácia (${d.fullName || "?"}, termín ${termLabel(d.termId)}${d.status === "waitlist" ? ", čakacia listina" : ""})`;
     case "edit": {
       const parts = Object.entries(d).map(([k, v]) => `${FIELD_LABELS_SK[k] || k}: „${v.from}“ → „${v.to}“`);
       return parts.length ? `Upravené údaje účastníka (${parts.join(", ")})` : "Upravené údaje účastníka (bez zmeny hodnôt)";
