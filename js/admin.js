@@ -1004,7 +1004,7 @@ async function deleteRegistration(r) {
   await loadAll();
 }
 
-function printAttendanceSheet(term, rows) {
+async function printAttendanceSheet(term, rows) {
   const title = term ? formatDateTime(term.datetime) : "Workshop";
   const area = document.getElementById("attendancePrintArea");
   const minRows = 12;
@@ -1042,6 +1042,9 @@ function printAttendanceSheet(term, rows) {
   `;
   document.head.appendChild(landscapeStyle);
   document.body.classList.add("printing-attendance");
+
+  const logoImgs = Array.from(area.querySelectorAll("#attendancePrintLogos img"));
+  await Promise.all(logoImgs.map((img) => img.decode().catch(() => {})));
 
   window.print();
 
