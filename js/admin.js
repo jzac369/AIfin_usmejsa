@@ -1010,21 +1010,28 @@ function printAttendanceSheet(term, rows) {
   const minRows = 12;
   const numberedRows = 10;
   const printRows = Array.from({ length: Math.max(minRows, rows.length) }, (_, i) => rows[i] || null);
+  const cell = (v) => v || "&nbsp;";
   area.innerHTML = `
     <h1>Prezenčná listina – Workshop „Ako sa nenechať oklamať: AI ako pomocník pri finančných rozhodnutiach“</h1>
     <p>Termín: ${title}</p>
     <table>
       <thead><tr><th>#</th><th>Meno a priezvisko</th><th>Mesto</th><th>Kód</th><th>Podpis</th></tr></thead>
       <tbody>
-        ${printRows.map((r, i) => `<tr><td>${i < numberedRows ? i + 1 : ""}</td><td>${r ? r.fullName : ""}</td><td>${r ? r.city : ""}</td><td>${r ? r.code : ""}</td><td></td></tr>`).join("")}
+        ${printRows.map((r, i) => `<tr><td>${cell(i < numberedRows ? i + 1 : "")}</td><td>${cell(r?.fullName)}</td><td>${cell(r?.city)}</td><td>${cell(r?.code)}</td><td>&nbsp;</td></tr>`).join("")}
       </tbody>
     </table>
     <table style="margin-top:14px; width:60%;">
       <thead><tr><th>Lektor – meno a priezvisko</th><th>Podpis lektora</th></tr></thead>
       <tbody>
-        <tr><td style="height:22px;"></td><td style="height:22px;"></td></tr>
+        <tr><td style="height:22px;">&nbsp;</td><td style="height:22px;">&nbsp;</td></tr>
       </tbody>
     </table>
+    <div id="attendancePrintLogos">
+      <img src="img/partners/nbs.jpg" alt="Nadácia Národnej banky Slovenska" />
+      <img src="img/partners/centrum-usmejsa.png" alt="Centrum Usmejsa" />
+      <img src="img/partners/usmev-pre-druhych.png" alt="Úsmev pre druhých" />
+      <img src="img/partners/digistart.jpg" alt="DigiStart" />
+    </div>
   `;
 
   const landscapeStyle = document.createElement("style");

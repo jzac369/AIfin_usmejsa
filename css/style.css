@@ -1113,6 +1113,8 @@ footer.site-footer {
 #attendancePrintArea table { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 10px; }
 #attendancePrintArea th, #attendancePrintArea td { border: 1px solid #999; padding: 3px 6px; text-align: left; font-size: 10.5px; line-height: 1.2; word-break: break-word; }
 #attendancePrintArea th { background: #eee; }
+#attendancePrintLogos { display: flex; justify-content: space-between; align-items: center; margin-top: 50px; }
+#attendancePrintLogos img { height: 46px; width: auto; object-fit: contain; }
 
 @media print {
   html:has(body.printing-attendance), body.printing-attendance {
