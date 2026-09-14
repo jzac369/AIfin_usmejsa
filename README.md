@@ -8,14 +8,14 @@ zadarmo na **GitHub Pages**.
 
 ## Čo stránka obsahuje
 
-- `index.html` – verejná registrácia na workshop, výber z 5 termínov (kapacita 10/termín),
+- `index.html` – verejná registrácia na workshop, výber z 5 termínov (kapacita nastaviteľná pre každý termín, štandardne 10),
   registračný formulár (meno, mesto, email, telefón) + 5-otázkový dotazník, po odoslaní
   pridelí účastníkovi náhodný **5-miestny kód** (písmená + čísla), QR kód kódu a možnosť
   stiahnuť pozvánku do kalendára (.ics)
 - `kviz.html` – prihlásenie cez 5-miestny kód, vstupný a výstupný kvíz (8 otázok, iné
   formulácie otázok/odpovedí v každom kvíze), porovnanie výsledkov a **certifikát na vytlačenie/PDF**
 - `admin.html` – admin zóna chránená Firebase Authentication (email + heslo):
-  - nastavenie 5 termínov workshopu (dátum, čas, kapacita 10, počet miest na čakacej listine)
+  - nastavenie 5 termínov workshopu (dátum, čas, kapacita, počet miest na čakacej listine)
   - zoznam prihlásených zoskupený podľa termínu, s vyhľadávaním, filtrom, farebným zvýraznením
     (zelená = oba kvízy hotové, žltá = len vstupný, modrá = náhradník) a **exportom do CSV**
   - úprava, presun na iný termín, zrušenie a natrvalé vymazanie registrácie (s interným logom zmien)
@@ -55,8 +55,8 @@ Po tomto kroku je appka plne funkčná – registrácia aj admin zóna.
 ### Nastavenie termínov workshopu
 
 Najjednoduchšie: otvor `admin.html`, prihlás sa svojim admin účtom a v záložke
-**"📅 Termíny"** nastav 5 dátumov a časov → **Uložiť termíny**. Kapacita je vždy 10,
-počet miest na čakacej listine (náhradníkov) si zvolíš pre každý termín samostatne.
+**"📅 Termíny"** nastav 5 dátumov a časov → **Uložiť termíny**. Kapacitu (štandardne 10)
+aj počet miest na čakacej listine (náhradníkov) si zvolíš pre každý termín samostatne.
 
 ## 1b. Nastavenie automatických potvrdzovacích emailov (voliteľné, zadarmo)
 

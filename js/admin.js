@@ -331,11 +331,15 @@ function renderTermsEditorList() {
     wrap.style.background = "rgba(255,255,255,.02)";
     wrap.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center;">
-        <label style="margin:0; font-size:.85rem;">${t.id ? `Termín (obsadené: ${t.booked}/10)` : "Nový termín"}</label>
+        <label style="margin:0; font-size:.85rem;">${t.id ? `Termín (obsadené: ${t.booked}/${full?.capacity || 10})` : "Nový termín"}</label>
         <button type="button" class="danger delete-term-btn" style="padding:3px 8px; font-size:.72rem;">Vymazať</button>
       </div>
       <input type="datetime-local" id="termInput${i}" value="${localValue}" />
       <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:6px;">
+        <div style="flex:1; min-width:120px;">
+          <label style="margin:0 0 4px;">Kapacita (potvrdení)</label>
+          <input type="number" min="1" id="capacityInput${i}" value="${full?.capacity || 10}" />
+        </div>
         <div style="flex:1; min-width:120px;">
           <label style="margin:0 0 4px;">Náhradníci (čakacia listina)</label>
           <input type="number" min="0" id="waitlistInput${i}" value="${full?.waitlistCapacity || 0}" />
@@ -421,32 +425,41 @@ document.getElementById("saveTermsBtn").addEventListener("click", async () => {
     const val = document.getElementById(`termInput${i}`).value;
     if (!val) continue;
     const waitlistCapacity = parseInt(document.getElementById(`waitlistInput${i}`).value, 10) || 0;
+    const capacity = parseInt(document.getElementById(`capacityInput${i}`).value, 10) || 10;
     const visibleInCalendar = document.getElementById(`visibleInput${i}`).checked;
+    // Kapacitu sa nesmie znížiť pod počet už potvrdených účastníkov - inak by
+    // termín vykazoval záporný počet voľných miest a čakacia listina by sa
+    // prestala správne posúvať.
+    if (t.id && capacity < (t.booked || 0)) {
+      alert(`Kapacitu termínu ${formatDateTime(new Date(val).toISOString())} nie je možné znížiť na ${capacity} – je naň už potvrdených ${t.booked} účastníkov.`);
+      return;
+    }
     if (t.id) {
       // booked/waitlistCount zámerne nie sú v tomto payloade: editableTerms je
       // snapshot z posledného prihlásenia do admina a nesleduje ho žiadny
       // live listener, takže by tu prepísal medzičasom správne (živé)
       // hodnoty spravované registráciami/zrušeniami/mazaním nazad na starú
-      // hodnotu. Termíny editor smie meniť len dátum/kapacitu čak. listiny/viditeľnosť.
+      // hodnotu. Termíny editor smie meniť len dátum/kapacitu/kapacitu čak.
+      // listiny/viditeľnosť.
       const payload = {
         datetime: new Date(val).toISOString(),
-        capacity: 10,
+        capacity,
         waitlistCapacity,
         visibleInCalendar
       };
       await setDoc(doc(db, "terms", t.id), payload, { merge: true });
-      await logAudit("term-update", "", { termId: t.id, datetime: payload.datetime, waitlistCapacity, visibleInCalendar });
+      await logAudit("term-update", "", { termId: t.id, datetime: payload.datetime, capacity, waitlistCapacity, visibleInCalendar });
     } else {
       const payload = {
         datetime: new Date(val).toISOString(),
-        capacity: 10,
+        capacity,
         booked: 0,
         waitlistCapacity,
         waitlistCount: 0,
         visibleInCalendar
       };
       const newTermRef = await addDoc(collection(db, "terms"), payload);
-      await logAudit("term-create", "", { termId: newTermRef.id, datetime: payload.datetime, waitlistCapacity, visibleInCalendar });
+      await logAudit("term-create", "", { termId: newTermRef.id, datetime: payload.datetime, capacity, waitlistCapacity, visibleInCalendar });
     }
   }
 
@@ -1007,8 +1020,9 @@ async function deleteRegistration(r) {
 async function printAttendanceSheet(term, rows) {
   const title = term ? formatDateTime(term.datetime) : "Workshop";
   const area = document.getElementById("attendancePrintArea");
-  const minRows = 12;
-  const numberedRows = 10;
+  // Očíslované riadky = potvrdená kapacita termínu, plus 2 prázdne navyše.
+  const numberedRows = term?.capacity || 10;
+  const minRows = numberedRows + 2;
   const printRows = Array.from({ length: Math.max(minRows, rows.length) }, (_, i) => rows[i] || null);
   const cell = (v) => v || "&nbsp;";
   area.innerHTML = `
@@ -1655,7 +1669,7 @@ function describeAuditEntry(e) {
     case "term-create":
       return `Vytvorený nový termín workshopu (${formatDateTime(d.datetime)})`;
     case "term-update":
-      return `Upravený termín workshopu (${formatDateTime(d.datetime)}, náhradníci: ${d.waitlistCapacity}, viditeľný: ${d.visibleInCalendar ? "áno" : "nie"})`;
+      return `Upravený termín workshopu (${formatDateTime(d.datetime)}, kapacita: ${d.capacity ?? 10}, náhradníci: ${d.waitlistCapacity}, viditeľný: ${d.visibleInCalendar ? "áno" : "nie"})`;
     case "quiz-restriction-change":
       return `Zmenené nastavenie: kvíz ${d.restrictToWorkshopDay ? "obmedzený len na deň workshopu" : "dostupný kedykoľvek"}`;
     case "log-purge":
