@@ -77,9 +77,19 @@ async function login() {
     errBox.style.display = "block";
     return;
   }
-  code = input;
-  registration = snap.data();
+  await loadParticipantContext(input, snap.data());
   loginCard.style.display = "none";
+
+  logParticipantEvent("login", {});
+  loadMaterials();
+  showWelcome();
+}
+
+// Načíta všetko, čo účastnícka zóna potrebuje po overení kódu. Volá to prihlásenie
+// aj obnova rozpísaného kvízu po refreshi stránky (restoreQuizProgress).
+async function loadParticipantContext(participantCode, data) {
+  code = participantCode;
+  registration = data;
 
   if (registration.termId) {
     const termSnap = await getDoc(doc(db, "terms", registration.termId));
@@ -91,10 +101,6 @@ async function login() {
 
   const detailsSnap = await getDoc(doc(db, "settings", "workshopDetails"));
   workshopDetails = detailsSnap.exists() ? detailsSnap.data() : null;
-
-  logParticipantEvent("login", {});
-  loadMaterials();
-  showWelcome();
 }
 
 async function loadMaterials() {
@@ -151,6 +157,8 @@ async function flagBlockedChangeAttempt(type) {
 }
 
 function showWelcome() {
+  // Na úvodnej obrazovke už žiadny kvíz nebeží - prípadný zvyšok postupu zahodíme.
+  clearQuizProgress();
   welcomeCard.style.display = "block";
   document.getElementById("welcomeTitle").textContent = `Vitajte, ${registration.fullName.split(" ")[0]}!`;
   document.getElementById("profileAvatar").textContent =
@@ -371,6 +379,77 @@ function button(label, onClick, cls = "") {
   return btn;
 }
 
+// ---------- Obnova rozpísaného kvízu po refreshi stránky ----------
+// Na tablete sa dá stránka refreshnúť aj omylom (gesto, zatvorené okno, výpadok
+// siete). Rozpísaný kvíz si preto priebežne odkladáme do sessionStorage - drží
+// to len do zatvorenia karty prehliadača, takže na zdieľanom tablete nezostane
+// nič po predošlom účastníkovi.
+const PROGRESS_KEY = "aifin-quiz-progress";
+
+function saveQuizProgress() {
+  try {
+    sessionStorage.setItem(PROGRESS_KEY, JSON.stringify({
+      code, guestMode, activeSet, currentIndex, answers
+    }));
+  } catch {
+    // Súkromný režim / zaplnené úložisko - obnova proste nebude fungovať.
+  }
+}
+
+function clearQuizProgress() {
+  try {
+    sessionStorage.removeItem(PROGRESS_KEY);
+  } catch {
+    // ignorujeme rovnako ako pri zápise
+  }
+}
+
+async function restoreQuizProgress() {
+  let saved = null;
+  try {
+    saved = JSON.parse(sessionStorage.getItem(PROGRESS_KEY) || "null");
+  } catch {
+    saved = null;
+  }
+  if (!saved || !quizSets[saved.activeSet]) return;
+
+  const set = quizSets[saved.activeSet];
+  // Ak admin medzitým zmenil počet otázok, uložený postup už nesedí - radšej
+  // začať odznova, než účastníkovi podsunúť odpovede na iné otázky.
+  if (!Array.isArray(saved.answers) || saved.answers.length > set.length ||
+      typeof saved.currentIndex !== "number" || saved.currentIndex > set.length) {
+    clearQuizProgress();
+    return;
+  }
+
+  if (!saved.guestMode) {
+    if (!saved.code) return clearQuizProgress();
+    const snap = await getDoc(doc(db, "registrations", saved.code));
+    if (!snap.exists()) return clearQuizProgress();
+    await loadParticipantContext(saved.code, snap.data());
+    loadMaterials();
+  }
+
+  guestMode = !!saved.guestMode;
+  activeSet = saved.activeSet;
+  answers = saved.answers;
+  currentIndex = saved.currentIndex;
+
+  loginCard.style.display = "none";
+  welcomeCard.style.display = "none";
+  quizCard.style.display = "block";
+  const count = set.length;
+  document.getElementById("quizTitle").innerHTML =
+    activeSet === "entry" ? `${ICONS.quiz}Vstupný kvíz (${count} otázok)` : `${ICONS.quiz}Výstupný kvíz (${count} otázok)`;
+
+  // Všetko zodpovedané, len sa to predtým nestihlo/nepodarilo uložiť - dokončíme.
+  if (currentIndex >= set.length) {
+    if (guestMode) finishGuestQuiz(set); else finishQuiz(set);
+    return;
+  }
+  renderQuestion();
+}
+
 function startQuiz(set) {
   activeSet = set;
   currentIndex = 0;
@@ -380,6 +459,7 @@ function startQuiz(set) {
   const count = quizSets[set].length;
   document.getElementById("quizTitle").innerHTML =
     set === "entry" ? `${ICONS.quiz}Vstupný kvíz (${count} otázok)` : `${ICONS.quiz}Výstupný kvíz (${count} otázok)`;
+  saveQuizProgress();
   renderQuestion();
 }
 
@@ -405,6 +485,7 @@ function renderQuestion() {
       optionsBox.dataset.locked = "1";
       answers[currentIndex] = i;
       currentIndex++;
+      saveQuizProgress();
       if (currentIndex >= set.length) {
         if (guestMode) finishGuestQuiz(set); else finishQuiz(set);
       } else {
@@ -448,6 +529,7 @@ async function finishQuiz(set) {
     return;
   }
 
+  clearQuizProgress();
   Object.assign(registration, updates);
   logParticipantEvent("quiz-completed", { set: activeSet, score, total: set.length });
   quizCard.style.display = "none";
@@ -487,6 +569,7 @@ async function finishQuiz(set) {
 // Skúšobný kvíz bez registrácie: rovnaké otázky ako pre registrovaných
 // účastníkov, no odpovede sa nikde neukladajú - iba sa zobrazí vyhodnotenie.
 function finishGuestQuiz(set) {
+  clearQuizProgress();
   const score = answers.reduce((acc, a, i) => acc + (a === set[i].correct ? 1 : 0), 0);
   const pct = Math.round((score / set.length) * 100);
 
@@ -573,4 +656,4 @@ document.getElementById("icsDownloadBtn").addEventListener("click", () => {
   }
 });
 
-loadQuestions();
+loadQuestions().then(restoreQuizProgress);

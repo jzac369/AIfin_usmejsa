@@ -21,6 +21,10 @@ body {
   color: var(--text);
   min-height: 100vh;
   background: var(--bg);
+  /* Vypína "pull-to-refresh" na tabletoch a mobiloch (potiahnutie prstom
+     nadol na vrchu stránky) - účastníci si ním omylom refreshovali
+     rozpísaný kvíz a prišli o odpovede. */
+  overscroll-behavior-y: contain;
 }
 
 h2 {
