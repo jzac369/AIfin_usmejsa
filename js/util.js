@@ -90,9 +90,10 @@ export function downloadICS(term, details) {
 export function exportRegistrationsCSV(registrations, terms) {
   const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
   const header = [
-    "Kód", "Meno a priezvisko", "Mesto", "Email", "Telefón", "Termín",
+    "Kód", "Meno a priezvisko", "Mesto", "Email", "Telefón", "Termín", "Prišiel",
     "Zdroj informácie", "Zariadenia", "Skúsenosti s AI", "Digitálne zručnosti", "Dôvod účasti", "Typ finančných rozhodnutí",
-    "Vstupný kvíz (%)", "Výstupný kvíz (%)", "Registrované"
+    "Vstupný kvíz (%)", "Výstupný kvíz (%)",
+    "Hodnotenie (hviezdy)", "NPS (0-10)", "Komentár", "Registrované"
   ];
   const rows = registrations.map((r) => {
     const term = termMap[r.termId];
@@ -103,6 +104,7 @@ export function exportRegistrationsCSV(registrations, terms) {
       r.email,
       r.phone,
       term ? formatDateTime(term.datetime) : r.termId,
+      r.attended ? "áno" : "nie",
       r.survey?.source ?? "",
       (r.survey?.devices ?? []).join("; "),
       r.survey?.aiExperience ?? "",
@@ -111,7 +113,10 @@ export function exportRegistrationsCSV(registrations, terms) {
       r.survey?.financeTopic ?? "",
       r.entryScore != null ? Math.round((r.entryScore / 8) * 100) : "",
       r.exitScore != null ? Math.round((r.exitScore / 8) * 100) : "",
-      r.createdAt ? new Date(r.createdAt).toLocaleString("sk-SK") : ""
+      r.feedback?.rating ?? "",
+      r.feedback?.nps ?? "",
+      // Komentár môže obsahovať zalomenia riadkov — v CSV by rozbili riadok.
+      (r.feedback?.comment ?? "").replace(/\s*\n+\s*/g, " "),
     ];
   });
   const csv = [header, ...rows]
